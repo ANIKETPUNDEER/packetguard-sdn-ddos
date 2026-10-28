@@ -1,0 +1,35 @@
+loading app controller/packetguard_ryu.py
+loading app ryu.controller.ofp_handler
+creating context wsgi
+instantiating app controller/packetguard_ryu.py of PacketGuardController
+Forwarding-only control mode: model loading is intentionally disabled
+instantiating app ryu.controller.ofp_handler of OFPHandler
+(19492) wsgi starting up on http://0.0.0.0:8080
+(19492) accepted ('127.0.0.1', 57214)
+127.0.0.1 - - [24/Oct/2026 18:04:26] "GET /stats/packetguard HTTP/1.1" 200 325 0.000767
+Switch 1 connected; forwarding-only control mode
+Switch 4 connected; forwarding-only control mode
+Switch 3 connected; forwarding-only control mode
+Switch 2 connected; forwarding-only control mode
+(19492) accepted ('127.0.0.1', 58356)
+127.0.0.1 - - [24/Oct/2026 18:04:31] "GET /stats/packetguard HTTP/1.1" 200 424 0.000298
+(19492) accepted ('127.0.0.1', 58360)
+127.0.0.1 - - [24/Oct/2026 18:04:33] "GET /stats/packetguard HTTP/1.1" 200 425 0.000304
+(19492) accepted ('127.0.0.1', 58364)
+127.0.0.1 - - [24/Oct/2026 18:04:35] "GET /stats/packetguard HTTP/1.1" 200 426 0.000276
+(19492) accepted ('127.0.0.1', 34270)
+127.0.0.1 - - [24/Oct/2026 18:04:37] "GET /stats/packetguard HTTP/1.1" 200 426 0.000289
+(19492) accepted ('127.0.0.1', 34272)
+127.0.0.1 - - [24/Oct/2026 18:04:39] "GET /stats/packetguard HTTP/1.1" 200 426 0.000300
+(19492) accepted ('127.0.0.1', 34282)
+127.0.0.1 - - [24/Oct/2026 18:04:41] "GET /stats/packetguard HTTP/1.1" 200 426 0.000250
+(19492) accepted ('127.0.0.1', 34286)
+127.0.0.1 - - [24/Oct/2026 18:04:43] "GET /stats/packetguard HTTP/1.1" 200 426 0.000254
+(19492) accepted ('127.0.0.1', 34296)
+127.0.0.1 - - [24/Oct/2026 18:04:45] "GET /stats/packetguard HTTP/1.1" 200 426 0.000274
+(19492) accepted ('127.0.0.1', 43756)
+127.0.0.1 - - [24/Oct/2026 18:04:47] "GET /stats/packetguard HTTP/1.1" 200 426 0.000256
+(19492) accepted ('127.0.0.1', 43768)
+127.0.0.1 - - [24/Oct/2026 18:04:49] "GET /stats/packetguard HTTP/1.1" 200 426 0.000339
+(19492) accepted ('127.0.0.1', 43784)
+127.0.0.1 - - [24/Oct/2026 18:04:54] "GET /stats/packetguard HTTP/1.1" 200 426 0.000307

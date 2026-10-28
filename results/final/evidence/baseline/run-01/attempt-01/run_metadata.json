@@ -1,0 +1,22 @@
+{
+  "scope": "live Mininet/OVS testbed; isolated private topology",
+  "setup": "none",
+  "duration_s": 20,
+  "aggregate_udp_rate_bps": 10000000,
+  "attack_enabled": false,
+  "multi_vector": false,
+  "spoofing": false,
+  "pcap_capture": null,
+  "host_count": 16,
+  "switch_count": 4,
+  "topology": "4-switch tree; 12 benign + 4 reserved attack hosts",
+  "rule_mode": "none",
+  "controller_url": "http://127.0.0.1:8080/stats/packetguard",
+  "samples": 10,
+  "client_exit_codes": [
+    0
+  ],
+  "completed": true,
+  "failure_reasons": [],
+  "note": "Raw controller/OVS timeline and client outputs are retained for this run."
+}

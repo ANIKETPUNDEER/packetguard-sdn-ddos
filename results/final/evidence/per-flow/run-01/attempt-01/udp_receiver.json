@@ -1,0 +1,26 @@
+{
+  "scope": "server-observed bounded lab UDP traffic",
+  "duration_s": 24.15577662600026,
+  "sources": {
+    "10.0.0.201": {
+      "packets": 1231,
+      "bytes": 1723400,
+      "receiver_mbps": 0.5707620257243163
+    },
+    "10.0.0.202": {
+      "packets": 1243,
+      "bytes": 1740200,
+      "receiver_mbps": 0.5763259122464055
+    },
+    "10.0.0.204": {
+      "packets": 1179,
+      "bytes": 1650600,
+      "receiver_mbps": 0.5466518507952632
+    },
+    "10.0.0.203": {
+      "packets": 758,
+      "bytes": 1061200,
+      "receiver_mbps": 0.3514521653119673
+    }
+  }
+}

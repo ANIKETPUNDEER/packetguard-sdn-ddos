@@ -1,0 +1,2 @@
+ cookie=0x0, duration=20.064s, table=0, n_packets=3174, n_bytes=4576908, idle_timeout=30, hard_timeout=30, priority=450,udp,nw_src=10.0.0.192/28,tp_dst=5201 actions=meter:1,output:"s1-eth1"
+ cookie=0x0, duration=26.496s, table=0, n_packets=126, n_bytes=14444, priority=0 actions=CONTROLLER:65535

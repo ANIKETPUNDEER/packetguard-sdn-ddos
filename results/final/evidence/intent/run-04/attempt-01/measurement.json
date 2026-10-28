@@ -1,0 +1,17 @@
+{
+  "setup": "intent",
+  "run": 4,
+  "benign_tcp_mbps": 16.66372142553185,
+  "attack_pkts_sent": 17860,
+  "attack_pkts_delivered": 4477,
+  "attack_delivered_mbps": 2.5067016934342194,
+  "max_ovs_flow_entries": 19.0,
+  "first_mitigation_s": 4.19,
+  "packet_in_per_s": 10.074626865671641,
+  "controller_api_ms": 5.653186499966978,
+  "retention": null,
+  "status": "completed",
+  "attempt": 1,
+  "failure_reason": "",
+  "evidence_dir": "/home/aniket/packetguard/results/final/evidence/intent/run-04/attempt-01"
+}

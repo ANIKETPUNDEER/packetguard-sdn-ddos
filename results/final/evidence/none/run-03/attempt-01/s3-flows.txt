@@ -1,0 +1,1 @@
+ cookie=0x0, duration=26.496s, table=0, n_packets=4580, n_bytes=6447876, priority=0 actions=CONTROLLER:65535

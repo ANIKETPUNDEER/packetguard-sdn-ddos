@@ -1,0 +1,5 @@
+ cookie=0x0, duration=21.928s, table=0, n_packets=10178, n_bytes=14676676, idle_timeout=30, hard_timeout=30, priority=450,udp,nw_src=10.0.0.192/28,tp_dst=5201 actions=meter:1,output:"s2-eth2"
+ cookie=0x0, duration=2.870s, table=0, n_packets=360, n_bytes=1597439, idle_timeout=10, hard_timeout=10, priority=400,tcp,nw_src=10.0.0.2,nw_dst=10.0.0.1,tp_dst=5200 actions=output:"s2-eth2"
+ cookie=0x0, duration=2.865s, table=0, n_packets=1022, n_bytes=73748, idle_timeout=10, hard_timeout=10, priority=400,tcp,nw_src=10.0.0.1,nw_dst=10.0.0.2,tp_dst=40198 actions=output:"s2-eth3"
+ cookie=0x0, duration=2.237s, table=0, n_packets=14, n_bytes=1306, idle_timeout=10, hard_timeout=10, priority=400,tcp,nw_src=10.0.0.1,nw_dst=10.0.0.2,tp_dst=40192 actions=output:"s2-eth3"
+ cookie=0x0, duration=26.525s, table=0, n_packets=144, n_bytes=50089, priority=0 actions=CONTROLLER:65535

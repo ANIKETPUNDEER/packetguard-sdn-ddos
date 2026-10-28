@@ -1,0 +1,75 @@
+{
+  "scope": "live Mininet TCP iperf3 and server-observed UDP output",
+  "benign_tcp": {
+    "available": true,
+    "receiver_mbps": 15.343737823825276
+  },
+  "udp_clients": {
+    "a1": {
+      "available": true,
+      "packets": 1953,
+      "bytes": 2734200,
+      "receiver_mbps": 0.9071725604463936
+    },
+    "a2": {
+      "available": true,
+      "packets": 761,
+      "bytes": 1065400,
+      "receiver_mbps": 0.35348608218110883
+    },
+    "a3": {
+      "available": true,
+      "packets": 758,
+      "bytes": 1061200,
+      "receiver_mbps": 0.35209257594386395
+    },
+    "a4": {
+      "available": true,
+      "packets": 952,
+      "bytes": 1332800,
+      "receiver_mbps": 0.4422059792856972
+    }
+  },
+  "udp_senders": {
+    "a1": {
+      "available": true,
+      "scope": "bounded lab UDP sender",
+      "target": "10.0.0.1",
+      "port": 5201,
+      "duration_s": 20.004798223999387,
+      "sent_packets": 4464,
+      "sent_bytes": 6249600,
+      "offered_mbps": 2.499240404235608
+    },
+    "a2": {
+      "available": true,
+      "scope": "bounded lab UDP sender",
+      "target": "10.0.0.1",
+      "port": 5201,
+      "duration_s": 20.00332891999915,
+      "sent_packets": 4465,
+      "sent_bytes": 6251000,
+      "offered_mbps": 2.499983887681937
+    },
+    "a3": {
+      "available": true,
+      "scope": "bounded lab UDP sender",
+      "target": "10.0.0.1",
+      "port": 5201,
+      "duration_s": 20.00334448800004,
+      "sent_packets": 4465,
+      "sent_bytes": 6251000,
+      "offered_mbps": 2.49998194201973
+    },
+    "a4": {
+      "available": true,
+      "scope": "bounded lab UDP sender",
+      "target": "10.0.0.1",
+      "port": 5201,
+      "duration_s": 20.003385408999748,
+      "sent_packets": 4465,
+      "sent_bytes": 6251000,
+      "offered_mbps": 2.4999768277974006
+    }
+  }
+}

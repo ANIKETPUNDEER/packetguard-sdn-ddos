@@ -1,0 +1,9 @@
+{
+  "scope": "bounded lab UDP sender",
+  "target": "10.0.0.1",
+  "port": 5201,
+  "duration_s": 20.00334092799949,
+  "sent_packets": 4465,
+  "sent_bytes": 6251000,
+  "offered_mbps": 2.499982386942262
+}

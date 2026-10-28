@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+data/
+artifacts/
+backup/
+backup_final_runs/
+*.zip
+PROJECT_CONTEXT.md
+run.py
+packetguard/
+results/*
+!results/final

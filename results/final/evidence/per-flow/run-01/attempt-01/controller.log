@@ -1,0 +1,105 @@
+loading app controller/packetguard_ryu.py
+loading app ryu.controller.ofp_handler
+creating context wsgi
+instantiating app controller/packetguard_ryu.py of PacketGuardController
+instantiating app ryu.controller.ofp_handler of OFPHandler
+(23988) wsgi starting up on http://0.0.0.0:8080
+(23988) accepted ('127.0.0.1', 34636)
+127.0.0.1 - - [24/Oct/2026 18:06:27] "GET /stats/packetguard HTTP/1.1" 200 328 0.000683
+Switch 1 connected; meter 1 at 1000 kbps
+Switch 4 connected; meter 1 at 1000 kbps
+Switch 3 connected; meter 1 at 1000 kbps
+Switch 2 connected; meter 1 at 1000 kbps
+(23988) accepted ('127.0.0.1', 34652)
+127.0.0.1 - - [24/Oct/2026 18:06:32] "GET /stats/packetguard HTTP/1.1" 200 427 0.000343
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.276 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.305 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.001 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.097 action=allow
+src=10.0.0.201 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.204 proto=17 dst_port=5201 risk=0.266 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.276 action=allow
+(23988) accepted ('127.0.0.1', 34656)
+127.0.0.1 - - [24/Oct/2026 18:06:34] "GET /stats/packetguard HTTP/1.1" 200 492 0.000285
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.465 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.204 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.330 action=allow_unscoped_suspicion
+src=10.0.0.201 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.204 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.372 action=throttle
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.372 action=throttle
+(23988) accepted ('127.0.0.1', 34670)
+127.0.0.1 - - [24/Oct/2026 18:06:36] "GET /stats/packetguard HTTP/1.1" 200 526 0.000332
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.251 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.247 action=allow
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.451 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.204 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.471 action=allow_unscoped_suspicion
+src=10.0.0.201 proto=17 dst_port=5201 risk=0.246 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.250 action=allow
+src=10.0.0.204 proto=17 dst_port=5201 risk=0.250 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.250 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.245 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.250 action=allow
+(23988) accepted ('127.0.0.1', 45980)
+127.0.0.1 - - [24/Oct/2026 18:06:38] "GET /stats/packetguard HTTP/1.1" 200 528 0.000425
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.482 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.204 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.470 action=allow_unscoped_suspicion
+src=10.0.0.201 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.204 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+(23988) accepted ('127.0.0.1', 45988)
+127.0.0.1 - - [24/Oct/2026 18:06:40] "GET /stats/packetguard HTTP/1.1" 200 527 0.000491
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.471 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.204 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.470 action=allow_unscoped_suspicion
+src=10.0.0.201 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.202 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.204 proto=17 dst_port=5201 risk=0.204 action=allow
+src=10.0.0.203 proto=17 dst_port=5201 risk=0.204 action=allow
+(23988) accepted ('127.0.0.1', 45990)
+127.0.0.1 - - [24/Oct/2026 18:06:42] "GET /stats/packetguard HTTP/1.1" 200 527 0.000529
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.209 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.209 action=allow
+(23988) accepted ('127.0.0.1', 46004)
+127.0.0.1 - - [24/Oct/2026 18:06:44] "GET /stats/packetguard HTTP/1.1" 200 526 0.000483
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.482 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.468 action=allow_unscoped_suspicion
+(23988) accepted ('127.0.0.1', 47928)
+127.0.0.1 - - [24/Oct/2026 18:06:46] "GET /stats/packetguard HTTP/1.1" 200 528 0.000634
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.579 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.470 action=allow_unscoped_suspicion
+(23988) accepted ('127.0.0.1', 47930)
+127.0.0.1 - - [24/Oct/2026 18:06:48] "GET /stats/packetguard HTTP/1.1" 200 528 0.000450
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.583 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.464 action=allow_unscoped_suspicion
+(23988) accepted ('127.0.0.1', 47934)
+127.0.0.1 - - [24/Oct/2026 18:06:51] "GET /stats/packetguard HTTP/1.1" 200 527 0.000435
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.579 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.468 action=allow_unscoped_suspicion
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.209 action=allow
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.209 action=allow
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.209 action=allow
+src=10.0.0.2 proto=6 dst_port=5200 risk=0.485 action=allow_unscoped_suspicion
+src=10.0.0.1 proto=6 dst_port=58044 risk=0.282 action=allow
+src=10.0.0.1 proto=6 dst_port=58036 risk=0.150 action=allow
+(23988) accepted ('127.0.0.1', 47948)
+127.0.0.1 - - [24/Oct/2026 18:06:55] "GET /stats/packetguard HTTP/1.1" 200 528 0.000357

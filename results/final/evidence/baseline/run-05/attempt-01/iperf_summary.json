@@ -1,0 +1,9 @@
+{
+  "scope": "live Mininet TCP iperf3 and server-observed UDP output",
+  "benign_tcp": {
+    "available": true,
+    "receiver_mbps": 19.029062067284187
+  },
+  "udp_clients": {},
+  "udp_senders": {}
+}
