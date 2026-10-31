@@ -308,8 +308,10 @@ class PacketGuardController(app_manager.RyuApp):
                   "ip_proto": proto}
         if dst_ip:
             fields["ipv4_dst"] = dst_ip
-        if proto == 6: fields["tcp_dst"] = dst_port
-        elif proto == 17: fields["udp_dst"] = dst_port
+        if proto == 6 and dst_port is not None:
+            fields["tcp_dst"] = dst_port
+        elif proto == 17 and dst_port is not None:
+            fields["udp_dst"] = dst_port
         return parser.OFPMatch(**fields)
 
     @staticmethod

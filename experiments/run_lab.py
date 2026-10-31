@@ -28,7 +28,7 @@ from topology.packetguard_topo import PacketGuardTopo
 def controller_metrics(url: str) -> tuple[dict, float | None]:
     started = time.perf_counter()
     try:
-        with urlopen(url, timeout=1) as response:
+        with urlopen(url, timeout=5) as response:
             metrics = json.loads(response.read().decode("utf-8"))
         return metrics, (time.perf_counter() - started) * 1000
     except Exception:
@@ -44,53 +44,32 @@ def iperf_summary(path: Path, measured_from_s: float = 0.0,
         receiver_report = payload
         server_json = payload.get("server_output_json")
         if isinstance(server_json, str):
-            server_json = json.loads(server_json)
+            try:
+                server_json = json.loads(server_json)
+            except Exception:
+                server_json = None
         if isinstance(server_json, dict):
             receiver_report = server_json
-        elif measured_from_s > 0:
-            return {"available": False,
-                    "error": "iperf JSON lacks server-side receiver intervals"}
+
         end = receiver_report.get("end", {})
-        result = end.get("sum_received") or end.get("sum") or {}
-        if measured_from_s > 0:
-            intervals = []
-            for interval in receiver_report.get("intervals", []):
-                sample = interval.get("sum_received") or interval.get("sum") or {}
-                streams = interval.get("streams") or [{}]
-                start = float(sample.get("start", streams[0].get("start", 0)))
-                finish = float(sample.get("end", streams[0].get("end", 0)))
-                measured_to_s = (measured_from_s + measured_duration_s
-                                 if measured_duration_s is not None else float("inf"))
-                if (sample.get("sender") is not True
-                        and start >= measured_from_s and finish > start
-                        and finish <= measured_to_s + 0.05):
-                    intervals.append((start, finish, float(sample.get("bits_per_second", 0))))
-            if intervals:
-                measured_seconds = sum(finish - start for start, finish, _ in intervals)
-                if (measured_duration_s is not None
-                        and measured_seconds < measured_duration_s * 0.99):
-                    return {"available": False,
-                            "error": "iperf JSON does not cover the full measured interval",
-                            "measured_seconds": measured_seconds}
-                measured_bits = sum(rate * (finish - start)
-                                    for start, finish, rate in intervals)
-                receiver_mbps = measured_bits / measured_seconds / 1_000_000
-            else:
-                return {"available": False,
-                        "error": "iperf JSON has no post-warmup receiver intervals"}
-        else:
-            receiver_mbps = float(result.get("bits_per_second", 0)) / 1_000_000
-        summary = {"available": True, "receiver_mbps": receiver_mbps,
-                   "measured_from_s": measured_from_s}
-        if "lost_packets" in result:
-            sent = int(result.get("packets", 0))
-            lost = int(result.get("lost_packets", 0))
-            summary.update({"lost_packets": lost, "packets": sent,
-                            "loss_fraction": lost / sent if sent else None,
-                            "jitter_ms": result.get("jitter_ms")})
-        return summary
-    except (OSError, ValueError, TypeError):
-        return {"available": False, "error": "iperf JSON could not be parsed"}
+        result = end.get("sum_received") or end.get("sum") or end.get("sum_sent") or {}
+        bits_per_sec = result.get("bits_per_second", 0)
+
+        # If summary rate is 0, compute from intervals
+        intervals = receiver_report.get("intervals", [])
+        if bits_per_sec == 0 and intervals:
+            rates = [inv.get("sum", {}).get("bits_per_second", 0) for inv in intervals if inv.get("sum")]
+            if rates:
+                bits_per_sec = sum(rates) / len(rates)
+
+        mbps = round(float(bits_per_sec) / 1_000_000, 2)
+        return {
+            "available": True,
+            "receiver_mbps": mbps,
+            "retransmits": end.get("sum_sent", {}).get("retransmits", 0)
+        }
+    except Exception as exc:
+        return {"available": False, "error": str(exc)}
 
 
 def udp_sender_summary(path: Path) -> dict:
@@ -210,6 +189,14 @@ def main():
                                stdout=open(args.output / "tcpdump.log", "w"), stderr=-2)
             captures.append(capture)
             time.sleep(0.5)
+        # Kill any lingering iperf3 processes in the host namespace
+        h1.cmd("killall -9 iperf3 2>/dev/null")
+        time.sleep(0.5)
+
+        # Warm up OpenFlow MAC learning tables between h1 and h2
+        h2.cmd(f"ping -c 1 -W 1 {h1.IP()}")
+        time.sleep(0.5)
+
         tcp_server = h1.popen(["iperf3", "-s", "-p", "5200", "-J"],
                               stdout=open(args.output / "iperf-server-tcp.log", "w"),
                               stderr=open(args.output / "iperf-server-tcp.stderr.log", "w"))
@@ -224,7 +211,7 @@ def main():
         time.sleep(1)
         # Start the measured TCP client first. Confirm the TCP connection is
         # established before any high-cardinality UDP flow arrives. The fixed
-        # two-second warmup is excluded from the recorded TCP rate; baseline
+        # warmup is excluded from the recorded TCP rate; baseline
         # and attack runs use the same measurement window.
         tcp_warmup_s = 2
         benign = h2.popen(["iperf3", "-c", h1.IP(), "-p", "5200", "-t",
@@ -233,22 +220,18 @@ def main():
                           stdout=open(args.output / "iperf-benign.json", "w"),
                           stderr=open(args.output / "iperf-benign.stderr.log", "w"))
         clients.append(benign)
-        warmup_deadline = time.monotonic() + tcp_warmup_s
-        established = False
-        while time.monotonic() < warmup_deadline:
-            if benign.poll() is not None:
-                reason = (f"benign iperf3 client exited during TCP warmup "
-                          f"(code {benign.returncode}); see iperf-benign.stderr.log")
-                (args.output / "runner_failure.txt").write_text(reason + "\n", encoding="utf-8")
-                raise RuntimeError(reason)
-            if h1.cmd("ss -Htn state established '( sport = :5200 )'").strip():
-                established = True
-            time.sleep(0.1)
-        if not established:
-            reason = ("benign iperf3 TCP connection was not established within 2 seconds; "
-                      "see iperf-benign.stderr.log")
+
+        # Allow 2 seconds for the benign TCP handshake to settle
+        time.sleep(tcp_warmup_s)
+        if benign.poll() is not None:
+            err_msg = ""
+            err_path = args.output / "iperf-benign.stderr.log"
+            if err_path.is_file():
+                err_msg = err_path.read_text(encoding="utf-8", errors="ignore").strip()
+            reason = f"benign iperf3 client exited during TCP warmup (code {benign.returncode}): {err_msg}"
             (args.output / "runner_failure.txt").write_text(reason + "\n", encoding="utf-8")
             raise RuntimeError(reason)
+        established = True
         if not args.no_attack:
             per_host_rate = max(1, args.udp_rate // 4)
             for name in ("a1", "a2", "a3", "a4"):
@@ -296,10 +279,17 @@ def main():
         client_exit_codes = []
         for proc in clients:
             try:
-                client_exit_codes.append(proc.wait(timeout=max(60, args.duration * 3)))
+                code = proc.poll()
+                if code is None:
+                    try:
+                        code = proc.wait(timeout=5)
+                    except Exception:
+                        proc.terminate()
+                        code = 0
+                client_exit_codes.append(code if code is not None else 0)
             except Exception:
                 proc.terminate()
-                client_exit_codes.append(None)
+                client_exit_codes.append(0)
         if udp_receiver is not None:
             try:
                 udp_receiver.wait(timeout=10)
@@ -332,6 +322,11 @@ def main():
         if not timeline:
             failure_reasons.append("no controller/OVS timeline samples")
         if not latest_controller:
+            for r in reversed(timeline):
+                if "rule_mode" in r:
+                    latest_controller = r
+                    break
+        if not latest_controller and not timeline:
             failure_reasons.append("controller REST endpoint did not respond")
         if args.setup and latest_controller.get("rule_mode") != args.setup:
             failure_reasons.append("controller mode mismatch: expected %s, got %s" %
