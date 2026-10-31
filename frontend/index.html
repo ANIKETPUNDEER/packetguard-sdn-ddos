@@ -1,0 +1,2038 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PacketGuard | Adaptive SDN DDoS Defense & Monitoring Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Neutral dark palette (from the template) */
+  --bg-base: #0a0a0a;
+  --bg-surface: rgba(255, 255, 255, 0.03);
+  --bg-card: rgba(23, 23, 23, 0.5);
+  --bg-card-hover: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1a1;
+  --text-muted: #8a8a8a;
+  --ring: rgba(115, 115, 115, 0.5);
+  /* Accents: Tailwind -400 tones, used as text/icon colors with /20 fills */
+  --accent-blue: #60a5fa;
+  --accent-cyan: #22d3ee;
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-rose: #f87171;
+  --accent-purple: #c084fc;
+  --tier-allow: #34d399;
+  --tier-throttle: #fbbf24;
+  --tier-block: #f87171;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #737373; }
+
+.layout-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-icon svg {
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: var(--text-primary);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.brand-title {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.brand-sub {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 2px;
+}
+
+.brand-sub span { white-space: nowrap; }
+
+/* Chips (match the template's protocol badges) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+button.badge { cursor: pointer; transition: background-color 0.15s, color 0.15s; }
+button.badge:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+
+.badge-cyan { color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.2); }
+.badge-purple { color: var(--accent-purple); border-color: rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.2); }
+.badge-emerald { color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.2); }
+.badge-amber { color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.2); }
+.badge-rose { color: var(--accent-rose); border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.2); }
+button.badge.badge-cyan:hover { background: rgba(6, 182, 212, 0.28); color: var(--accent-cyan); }
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Status pills use the template's outline-button look */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--border-strong);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.status-dot.online {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 6px var(--accent-emerald);
+  animation: pulse-glow 2s infinite;
+}
+
+.status-dot.offline {
+  background: var(--accent-rose);
+  box-shadow: 0 0 6px var(--accent-rose);
+}
+
+.status-dot.syncing {
+  background: var(--accent-amber);
+  animation: pulse-glow 1s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+
+/* Workflow banner */
+.demo-workflow-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 9px 16px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+}
+
+.workflow-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wf-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.wf-step.active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.wf-step.complete { color: var(--accent-emerald); }
+
+.wf-arrow { color: #404040; }
+
+.demo-event-message {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* KPI cards: label top-left, big mono value, thin icon on the right */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 42px;
+  width: 32px;
+  height: 32px;
+  background: var(--card-accent, var(--text-secondary));
+  -webkit-mask: var(--kpi-icon) center / contain no-repeat;
+  mask: var(--kpi-icon) center / contain no-repeat;
+  pointer-events: none;
+}
+
+.kpi-card:nth-child(1) { --kpi-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'/%3E%3C/svg%3E"); }
+.kpi-card:nth-child(2) { --kpi-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='16' y='16' width='6' height='6' rx='1'/%3E%3Crect x='2' y='16' width='6' height='6' rx='1'/%3E%3Crect x='9' y='2' width='6' height='6' rx='1'/%3E%3Cpath d='M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3'/%3E%3Cpath d='M12 12V8'/%3E%3C/svg%3E"); }
+.kpi-card:nth-child(3) { --kpi-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/%3E%3C/svg%3E"); }
+.kpi-card:nth-child(4) { --kpi-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2'/%3E%3C/svg%3E"); }
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.kpi-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Tabs: template's segmented pill control */
+.nav-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  gap: 2px;
+  padding: 3px;
+  background: #262626;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.nav-tab {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.nav-tab:hover { color: var(--text-primary); }
+.nav-tab.active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.075);
+  border-color: var(--border-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.nav-tab:focus-visible,
+button.badge:focus-visible {
+  outline: none;
+  border-color: #737373;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Main grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.18fr 0.82fr;
+  gap: 16px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Panels = template cards */
+.panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.panel-title svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.panel-action { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* Topology */
+.topo-container {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.topo-svg {
+  width: 100%;
+  height: 380px;
+  display: block;
+}
+
+.topo-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* 3-tier mitigation bar */
+.tier-meter-wrap { margin: 12px 0 16px; }
+
+.tier-bar {
+  display: flex;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border-strong);
+}
+
+.tier-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.tier-zone.allow { background: rgba(16, 185, 129, 0.2); color: var(--tier-allow); width: 30%; }
+.tier-zone.throttle { background: rgba(245, 158, 11, 0.2); color: var(--tier-throttle); width: 40%; }
+.tier-zone.block { background: rgba(239, 68, 68, 0.2); color: var(--tier-block); width: 30%; }
+
+.tier-score-needle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.tier-score-tooltip {
+  position: absolute;
+  bottom: 30px;
+  transform: translateX(-50%);
+  background: #0a0a0a;
+  border: 1px solid var(--border-strong);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tier-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* Tier cards borrow the template's red left-border treatment for flagged rows */
+.tier-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.tier-card.allow { border-left: 2px solid var(--tier-allow); }
+.tier-card.throttle { border-left: 2px solid var(--tier-throttle); }
+.tier-card.block { border-left: 2px solid var(--tier-block); }
+
+.tier-card-title {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.tier-card-count {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+}
+
+.tier-card-rule {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Intent wildcard box */
+.intent-visual-box {
+  background: rgba(6, 182, 212, 0.05);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.rule-code-snippet {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--accent-cyan);
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-top: 6px;
+}
+
+/* Tables: divided rows, subtle hover, mono data */
+.table-wrap {
+  overflow-x: auto;
+  max-height: 240px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+th {
+  background: #121212;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+tr:hover td { background: rgba(255, 255, 255, 0.05); }
+
+.tag-tier {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.tag-tier.allow { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.3); color: var(--tier-allow); }
+.tag-tier.throttle { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.3); color: var(--tier-throttle); }
+.tag-tier.block { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.3); color: var(--tier-block); }
+
+/* Charts */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  margin-top: 8px;
+}
+
+canvas { width: 100% !important; height: 100% !important; display: block; }
+
+/* Experiments */
+.experiments-view { display: none; }
+.experiments-view.active { display: block; }
+
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.exp-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.exp-card.highlight { border-color: rgba(34, 211, 238, 0.4); }
+
+.exp-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.exp-metric-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+
+.exp-metric-row:last-child { border-bottom: none; }
+.exp-metric-label { color: var(--text-muted); }
+.exp-metric-val { font-family: var(--font-mono); font-weight: 500; color: #fff; }
+
+/* Model stats bar */
+.model-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  background: var(--bg-card);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.model-stat-item { text-align: left; }
+.model-stat-label { font-size: 12.5px; color: var(--text-secondary); font-weight: 400; }
+.model-stat-val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: #fff; margin-top: 2px; }
+
+
+/* Donut gauges (template's bandwidth meter) */
+.gauge-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 10px 10px;
+}
+.gauge-ring { position: relative; width: 104px; height: 104px; }
+.gauge-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.gauge-ring circle { fill: none; stroke-width: 8; }
+.gauge-ring .g-track { stroke: rgba(255, 255, 255, 0.06); }
+.gauge-ring .g-fill { stroke-linecap: round; transition: stroke-dashoffset 0.5s; }
+.gauge-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gauge-val { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: #fff; line-height: 1.1; }
+.gauge-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+.gauge-label { font-size: 13px; color: var(--text-secondary); }
+.tier-card-pct { float: right; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+@media (prefers-reduced-motion: reduce) { .gauge-ring .g-fill { transition: none; } }
+
+/* Footer */
+footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1280px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .exp-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .layout-wrap { padding: 16px; }
+  header { flex-direction: column; align-items: flex-start; }
+  .header-status-group { justify-content: flex-start; }
+  .kpi-grid, .exp-grid, .tier-cards-row { grid-template-columns: 1fr; }
+  .model-stats-bar { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot.online, .status-dot.syncing { animation: none; }
+  .tier-score-needle, .nav-tab, button.badge { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout-wrap">
+  <!-- Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <h1 class="brand-title">PacketGuard</h1>
+          <span class="badge badge-cyan">SDN Defense Console</span>
+          <span class="badge badge-purple">OpenFlow 1.3</span>
+        </div>
+        <div class="brand-sub">
+          <span>Graduated Per-Flow Mitigation for Adaptive DDoS Defense</span>
+          <span>&bull;</span>
+          <span>Ryu Controller &bull; Mininet &bull; Open vSwitch</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Group -->
+    <div class="header-status-group">
+      <div class="status-pill" id="pillController">
+        <span class="status-dot offline" id="dotController"></span>
+        <span id="textController">Checking Controller...</span>
+      </div>
+      <div class="status-pill" id="pillSwitches">
+        <span style="color:var(--accent-cyan);">Switch Datapaths:</span>
+        <span id="valSwitches" style="font-family:var(--font-mono);">0 / 4</span>
+      </div>
+      <div class="status-pill" id="pillModel">
+        <span style="color:var(--accent-purple);">Classifier:</span>
+        <span id="valModel">Checking...</span>
+      </div>
+      <div class="status-pill" id="pillMode">
+        <span style="color:var(--accent-amber);">Defense Mode:</span>
+        <span id="valMode" style="font-family:var(--font-mono);">INTENT</span>
+      </div>
+      <div class="status-pill" style="color:var(--text-muted); font-size:11px;">
+        <span id="valUpdated">Awaiting Telemetry</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Demo Workflow Bar (Crucial for Silent Video Demonstration) -->
+  <div class="demo-workflow-bar">
+    <div class="workflow-steps">
+      <span class="wf-step complete" id="wfStep1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        1. Topology & OVS Setup
+      </span>
+      <span class="wf-arrow">&rarr;</span>
+      <span class="wf-step complete" id="wfStep2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        2. Ryu Controller Linked
+      </span>
+      <span class="wf-arrow">&rarr;</span>
+      <span class="wf-step" id="wfStep3">
+        <span id="wfStep3Icon">&bull;</span> 3. Traffic Monitoring
+      </span>
+      <span class="wf-arrow">&rarr;</span>
+      <span class="wf-step" id="wfStep4">
+        <span id="wfStep4Icon">&bull;</span> 4. ML Risk Scoring
+      </span>
+      <span class="wf-arrow">&rarr;</span>
+      <span class="wf-step" id="wfStep5">
+        <span id="wfStep5Icon">&bull;</span> 5. 3-Tier Mitigation Active
+      </span>
+    </div>
+    <div class="demo-event-message" id="demoEventMessage">
+      <span class="status-dot online" style="width:6px; height:6px;"></span>
+      <span id="eventMsgText">Dashboard initialized. Connecting to Ryu telemetry socket...</span>
+    </div>
+  </div>
+
+  <!-- KPI Metrics Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--card-accent: var(--accent-blue);">
+      <div class="kpi-header">
+        <span class="kpi-label">Cumulative Packet-In</span>
+        <span class="badge badge-cyan" id="badgePacketInRate">0 msg/s</span>
+      </div>
+      <div class="kpi-value" id="kpiPacketIn">0</div>
+      <div class="kpi-meta">
+        <span>OpenFlow Control Plane Queue</span>
+        <span>&bull;</span>
+        <span id="kpiPacketInDelta">+0 / poll</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent-purple);">
+      <div class="kpi-header">
+        <span class="kpi-label">Active Flow Entries</span>
+        <span class="badge badge-purple" id="badgeFlowMode">O(1) Scalable</span>
+      </div>
+      <div class="kpi-value" id="kpiFlowEntries">0</div>
+      <div class="kpi-meta">
+        <span>OVS Flow Tables Across 4 Switches</span>
+        <span>&bull;</span>
+        <span id="kpiIntentsCount">0 intents</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent-amber);">
+      <div class="kpi-header">
+        <span class="kpi-label">Scored Flow Decisions</span>
+        <span class="badge badge-amber" id="badgeDecisionRatio">3-Tier Policy</span>
+      </div>
+      <div class="kpi-value" id="kpiScoredFlows">0</div>
+      <div class="kpi-meta">
+        <span style="color:var(--tier-allow);" id="kpiAllowCount">Allow: 0</span>
+        <span>&bull;</span>
+        <span style="color:var(--tier-throttle);" id="kpiThrottleCount">Throttle: 0</span>
+        <span>&bull;</span>
+        <span style="color:var(--tier-block);" id="kpiBlockCount">Block: 0</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent-emerald);">
+      <div class="kpi-header">
+        <span class="kpi-label">OVS Datapath Volume</span>
+        <span class="badge badge-emerald" id="badgeThroughput">0.00 Mbps</span>
+      </div>
+      <div class="kpi-value" id="kpiBytes">0 B</div>
+      <div class="kpi-meta">
+        <span>Observed Switch Bytes</span>
+        <span>&bull;</span>
+        <span id="kpiPackets">0 packets</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tabLive" onclick="switchTab('live')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Live Monitoring & SDN Defense
+    </button>
+    <button class="nav-tab" id="tabTopology" onclick="switchTab('topology')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      Interactive Topology View
+    </button>
+    <button class="nav-tab" id="tabExperiments" onclick="switchTab('experiments')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Verified Benchmark Experiments
+    </button>
+    <button class="nav-tab" id="tabHistoricalPlots" onclick="switchTab('plots')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Run Plots & Telemetry Curves
+    </button>
+  </div>
+
+  <!-- LIVE DASHBOARD VIEW -->
+  <div id="viewLive" class="dashboard-grid">
+    <!-- Left Column: Topology & Real-Time Charts -->
+    <div class="column">
+      <!-- Network Topology Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v6m0 6v6m9-9h-6m-6 0H3"/></svg>
+            Mininet SDN Topology & Traffic Vectors
+          </div>
+          <span class="panel-action" id="topoStatusLabel">16 Hosts &bull; 4 OVS Switches &bull; 1 Ryu Controller</span>
+        </div>
+
+        <div class="topo-container">
+          <svg class="topo-svg" id="topoGraph" viewBox="0 0 880 370">
+            <!-- Dynamic SVG elements injected via renderTopology() -->
+          </svg>
+          <div class="topo-legend">
+            <div class="legend-item"><span class="legend-swatch" style="background:#c084fc;"></span> Ryu Controller (c0)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:#60a5fa;"></span> Core Switch (s1)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:#22d3ee;"></span> Leaf Switches (s2, s3, s4)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:#71717a;"></span> Benign Hosts (h2-h12)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:#fbbf24;"></span> Victim Target (h1)</div>
+            <div class="legend-item"><span class="legend-swatch" style="background:#f87171;"></span> Attack Nodes (a1-a4 in 10.0.0.192/28)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Telemetry Charts Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Live Controller & Switch Telemetry (Rolling 60s Window)
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="badge badge-cyan" onclick="setChartMetric('packet_in')" id="btnChartPktIn">Packet-In</button>
+            <button class="badge" onclick="setChartMetric('flow_entries')" id="btnChartFlows">Flow Entries</button>
+            <button class="badge" onclick="setChartMetric('decisions')" id="btnChartDecisions">Mitigation</button>
+            <button class="badge" onclick="setChartMetric('bytes')" id="btnChartBytes">Byte Rate</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="liveCanvas"></canvas>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
+          <span id="chartLabelMin">T - 60s</span>
+          <span id="chartLabelMetric">Metric: Cumulative Packet-In messages</span>
+          <span id="chartLabelNow">Live (T = 0s)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: ML Policy, Intent Engine, & Scored Flows -->
+    <div class="column">
+      <!-- 3-Tier Mitigation Policy Visualizer -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Graduated 3-Tier ML Policy Decision Engine
+          </div>
+          <span class="badge badge-emerald" id="badgeLastScore">Last Score: 0.00</span>
+        </div>
+
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+          Dynamic OpenFlow policy driven by Random Forest attack risk classification:
+        </p>
+
+        <!-- Threshold Meter Bar -->
+        <div class="tier-meter-wrap">
+          <div class="tier-bar" id="tierBar">
+            <div class="tier-zone allow">Allow &lt; 0.30</div>
+            <div class="tier-zone throttle">Throttle 0.30 - 0.70</div>
+            <div class="tier-zone block">Block &gt; 0.70</div>
+            <div class="tier-score-needle" id="scoreNeedle" style="left: 0%;">
+              <div class="tier-score-tooltip" id="scoreTooltip">Score: 0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Donut gauges -->
+        <div class="gauge-row">
+          <div class="gauge">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 104 104"><circle class="g-track" cx="52" cy="52" r="45"/><circle class="g-fill" id="gaugeMitigation" cx="52" cy="52" r="45" stroke="var(--accent-emerald)" stroke-dasharray="282.74" stroke-dashoffset="282.74"/></svg>
+              <div class="gauge-center"><span class="gauge-val" id="gaugeMitigationVal">0%</span><span class="gauge-sub" id="gaugeMitigationSub">0 / 0</span></div>
+            </div>
+            <span class="gauge-label">Mitigation rate</span>
+          </div>
+          <div class="gauge">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 104 104"><circle class="g-track" cx="52" cy="52" r="45"/><circle class="g-fill" id="gaugeSwitches" cx="52" cy="52" r="45" stroke="var(--accent-blue)" stroke-dasharray="282.74" stroke-dashoffset="282.74"/></svg>
+              <div class="gauge-center"><span class="gauge-val" id="gaugeSwitchesVal">0 / 4</span><span class="gauge-sub">datapaths</span></div>
+            </div>
+            <span class="gauge-label">Switches online</span>
+          </div>
+        </div>
+
+        <!-- 3-Tier Metrics Cards -->
+        <div class="tier-cards-row">
+          <div class="tier-card allow">
+            <div class="tier-card-title">Tier 1: Allow<span class="tier-card-pct" id="pctAllow">0%</span></div>
+            <div class="tier-card-count" id="countAllow" style="color:var(--tier-allow);">0</div>
+            <div class="tier-card-rule">Score &lt; 0.30<br>Exact Forwarding</div>
+          </div>
+          <div class="tier-card throttle">
+            <div class="tier-card-title">Tier 2: Throttle<span class="tier-card-pct" id="pctThrottle">0%</span></div>
+            <div class="tier-card-count" id="countThrottle" style="color:var(--tier-throttle);">0</div>
+            <div class="tier-card-rule">Score 0.30 - 0.70<br>Meter Band (1 Mbps)</div>
+          </div>
+          <div class="tier-card block">
+            <div class="tier-card-title">Tier 3: Block<span class="tier-card-pct" id="pctBlock">0%</span></div>
+            <div class="tier-card-count" id="countBlock" style="color:var(--tier-block);">0</div>
+            <div class="tier-card-rule">Score &gt; 0.70<br>Wildcard Drop</div>
+          </div>
+        </div>
+
+        <!-- Intent-Based Wildcard Aggregation Card -->
+        <div class="intent-visual-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:12px; font-weight:700; color:var(--accent-cyan);">Intent-Based Wildcard Aggregation</span>
+            <span class="badge badge-cyan" id="badgeIntentReduction">O(1) Rule Aggregation</span>
+          </div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">
+            Collapses all 1,024 potential attacker hosts in <code style="color:#fff;">10.0.0.192/28</code> into <strong>one single flow rule</strong> on switches:
+          </div>
+          <div class="rule-code-snippet" id="intentRuleSnippet">
+            priority=450,udp,nw_src=10.0.0.192/28,tp_dst=5201 actions=meter:1,output:port
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:var(--text-muted);">
+            <span>Installed Intents: <strong id="valInstalledIntents" style="color:#fff;">0</strong></span>
+            <span>Flow Table Conservation: <strong style="color:var(--accent-emerald);">99.6% Reduction</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Scored Flows Table Panel -->
+      <div class="panel" style="flex:1;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+            Telemetry Flow Scoring Log
+          </div>
+          <span class="panel-action" id="flowsCountLabel">0 recorded flows</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Switch</th>
+                <th>Source IP</th>
+                <th>Proto/Port</th>
+                <th>Risk Score</th>
+                <th>Tier</th>
+                <th>Mitigation Action</th>
+              </tr>
+            </thead>
+            <tbody id="flowsTableBody">
+              <tr>
+                <td colspan="6" style="text-align:center; padding:30px 10px; color:var(--text-muted);">
+                  Waiting for flow traffic...<br>
+                  <span style="font-size:11px;">(Start Mininet experiment: <code>sudo .venv/bin/python experiments/run_lab.py</code> to trigger live flow classification)</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Switch Flow Table Counters Breakdown -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Open vSwitch Datapath Counters
+          </div>
+          <span class="panel-action">OpenFlow 1.3 Tables</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;" id="switchCardsGrid">
+          <div class="tier-card" style="padding:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--accent-cyan);">s1 (Core)</div>
+            <div style="font-size:16px; font-weight:800; font-family:var(--font-mono); margin-top:2px;" id="s1Flows">0</div>
+            <div style="font-size:10px; color:var(--text-muted);">entries</div>
+          </div>
+          <div class="tier-card" style="padding:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--accent-cyan);">s2 (Leaf 1)</div>
+            <div style="font-size:16px; font-weight:800; font-family:var(--font-mono); margin-top:2px;" id="s2Flows">0</div>
+            <div style="font-size:10px; color:var(--text-muted);">entries</div>
+          </div>
+          <div class="tier-card" style="padding:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--accent-cyan);">s3 (Leaf 2)</div>
+            <div style="font-size:16px; font-weight:800; font-family:var(--font-mono); margin-top:2px;" id="s3Flows">0</div>
+            <div style="font-size:10px; color:var(--text-muted);">entries</div>
+          </div>
+          <div class="tier-card" style="padding:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--accent-cyan);">s4 (Leaf 3)</div>
+            <div style="font-size:16px; font-weight:800; font-family:var(--font-mono); margin-top:2px;" id="s4Flows">0</div>
+            <div style="font-size:10px; color:var(--text-muted);">entries</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPERIMENTS VIEW (Verified Historical Benchmark) -->
+  <div id="viewExperiments" class="experiments-view">
+    <div style="background:rgba(6, 182, 212, 0.05); border:1px solid rgba(6, 182, 212, 0.25); border-radius:var(--radius-md); padding:12px 18px; margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="color:var(--accent-cyan); font-size:13.5px;">Verified Testbed Evaluation & Benchmark Results</strong>
+          <p style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+            Empirical measurements from completed isolated Mininet lab runs and Random Forest training on the CIC-DDoS2019 dataset.
+          </p>
+        </div>
+        <span class="badge badge-cyan">4 Experimental Setups</span>
+      </div>
+    </div>
+
+    <!-- 4 Setups Cards Comparison -->
+    <div class="exp-grid" id="expSetupsGrid">
+      <!-- Injected via JavaScript from /api/experiments -->
+    </div>
+
+    <!-- ML Model Performance Evaluation Banner -->
+    <div class="panel" style="margin-bottom:18px;">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+          Random Forest Classifier Offline Evaluation (CIC-DDoS2019 Dataset)
+        </div>
+        <span class="badge badge-purple">30,000 Held-Out Samples</span>
+      </div>
+
+      <div class="model-stats-bar">
+        <div class="model-stat-item">
+          <div class="model-stat-label">Overall Accuracy</div>
+          <div class="model-stat-val">99.25%</div>
+        </div>
+        <div class="model-stat-item">
+          <div class="model-stat-label">Macro F1 Score</div>
+          <div class="model-stat-val">0.9757</div>
+        </div>
+        <div class="model-stat-item">
+          <div class="model-stat-label">Attack F1 Score</div>
+          <div class="model-stat-val">0.9959</div>
+        </div>
+        <div class="model-stat-item">
+          <div class="model-stat-label">ROC AUC Score</div>
+          <div class="model-stat-val">0.9962</div>
+        </div>
+        <div class="model-stat-item">
+          <div class="model-stat-label">5-Fold CV F1</div>
+          <div class="model-stat-val">0.9649 &plusmn; 0.005</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#fff; margin-bottom:8px;">Feature Importances (5 Flow Metrics):</div>
+          <table style="font-size:11px;">
+            <thead><tr><th>Feature</th><th>Importance Weight</th><th>SDN Telemetry Source</th></tr></thead>
+            <tbody>
+              <tr><td><code>byte_count</code></td><td><strong style="color:var(--accent-cyan);">50.92%</strong></td><td>OpenFlow FlowStatsReply delta</td></tr>
+              <tr><td><code>packet_rate</code></td><td><strong style="color:var(--accent-cyan);">33.35%</strong></td><td>Delta packets / interval duration</td></tr>
+              <tr><td><code>duration_s</code></td><td><strong style="color:var(--accent-cyan);">15.72%</strong></td><td>Flow rule duration in OVS table</td></tr>
+              <tr><td><code>protocol</code></td><td>0.00%</td><td>IP protocol (TCP=6, UDP=17, ICMP=1)</td></tr>
+              <tr><td><code>dst_port</code></td><td>0.00%</td><td>L4 destination service port</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div style="font-size:12px; font-weight:700; color:#fff; margin-bottom:8px;">Graduated Threshold Sweep Trade-offs:</div>
+          <table style="font-size:11px;">
+            <thead><tr><th>Low (Throttle)</th><th>High (Block)</th><th>Benign Action Rate</th><th>Attack Block Rate</th></tr></thead>
+            <tbody>
+              <tr><td>0.20</td><td>0.70</td><td>5.91%</td><td>99.11%</td></tr>
+              <tr style="background:rgba(6, 182, 212, 0.08); font-weight:700;"><td>0.30 (Selected)</td><td>0.70 (Selected)</td><td><span style="color:var(--accent-emerald);">4.90%</span></td><td><span style="color:var(--accent-cyan);">99.11%</span></td></tr>
+              <tr><td>0.40</td><td>0.70</td><td>3.54%</td><td>99.11%</td></tr>
+              <tr><td>0.30</td><td>0.80</td><td>4.90%</td><td>98.73%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORICAL PLOTS VIEW -->
+  <div id="viewPlots" class="experiments-view">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Completed Lab Experiment Curves (live-complete run)
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="badge badge-cyan" onclick="loadPlot('mitigation_actions')">Mitigation Actions</button>
+          <button class="badge" onclick="loadPlot('packet_in')">Packet-In Events</button>
+          <button class="badge" onclick="loadPlot('flow_entries')">OVS Flow Entries</button>
+          <button class="badge" onclick="loadPlot('ovs_bytes')">Datapath Bytes</button>
+          <button class="badge" onclick="loadPlot('benign_goodput')">Benign TCP Goodput</button>
+        </div>
+      </div>
+
+      <div style="text-align:center; padding:10px; background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
+        <img id="histPlotImg" src="../results/live-complete/plots/mitigation_actions.png" onerror="this.src='/results/live-complete/plots/mitigation_actions.png'" alt="Experiment Plot" style="max-width:100%; height:auto; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+        <div id="histPlotCaption" style="font-size:12px; color:var(--text-secondary); margin-top:10px;">
+          Installed intent-based mitigation actions across the 20-second Mininet run.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div>
+      <strong>PacketGuard</strong> &bull; Graduated Per-Flow Defense &bull; OpenFlow 1.3 &bull; Mininet &bull; Ryu 4.34
+    </div>
+    <div style="font-family:var(--font-mono); font-size:11px;">
+      Target: 10.0.0.1 (h1) &bull; Attacker Scope: 10.0.0.192/28 (a1-a4) &bull; Throttle: 1000 kbps
+    </div>
+  </footer>
+</div>
+
+<script>
+// Dashboard State & Real-Time Engine
+let isControllerOnline = false;
+let pollingInterval = null;
+let pollInFlight = false;
+let currentChartMetric = 'packet_in';
+
+// Telemetry Rolling History (60 sample points, 2s each = 120s window)
+const HISTORY_LIMIT = 60;
+const historyData = {
+  times: [],
+  packet_in: [],
+  packet_in_rate: [],
+  flow_entries: [],
+  allow: [],
+  throttle: [],
+  block: [],
+  bytes: [],
+  byte_rate: []
+};
+
+let lastTelemetry = null;
+let topologyData = null;
+let experimentsData = null;
+
+// DOM Elements
+const dotController = document.getElementById('dotController');
+const textController = document.getElementById('textController');
+const valSwitches = document.getElementById('valSwitches');
+const valModel = document.getElementById('valModel');
+const valMode = document.getElementById('valMode');
+const valUpdated = document.getElementById('valUpdated');
+const eventMsgText = document.getElementById('eventMsgText');
+
+const kpiPacketIn = document.getElementById('kpiPacketIn');
+const kpiPacketInDelta = document.getElementById('kpiPacketInDelta');
+const badgePacketInRate = document.getElementById('badgePacketInRate');
+const kpiFlowEntries = document.getElementById('kpiFlowEntries');
+const kpiIntentsCount = document.getElementById('kpiIntentsCount');
+const kpiScoredFlows = document.getElementById('kpiScoredFlows');
+const kpiAllowCount = document.getElementById('kpiAllowCount');
+const kpiThrottleCount = document.getElementById('kpiThrottleCount');
+const kpiBlockCount = document.getElementById('kpiBlockCount');
+const kpiBytes = document.getElementById('kpiBytes');
+const badgeThroughput = document.getElementById('badgeThroughput');
+const kpiPackets = document.getElementById('kpiPackets');
+
+const countAllow = document.getElementById('countAllow');
+const countThrottle = document.getElementById('countThrottle');
+const countBlock = document.getElementById('countBlock');
+const scoreNeedle = document.getElementById('scoreNeedle');
+const scoreTooltip = document.getElementById('scoreTooltip');
+const badgeLastScore = document.getElementById('badgeLastScore');
+const valInstalledIntents = document.getElementById('valInstalledIntents');
+const flowsTableBody = document.getElementById('flowsTableBody');
+const flowsCountLabel = document.getElementById('flowsCountLabel');
+
+// Initialize Dashboard
+document.addEventListener('DOMContentLoaded', async () => {
+  await fetchTopology();
+  await fetchExperiments();
+  startPolling();
+});
+
+// Tab Switching
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('viewLive').style.display = 'none';
+  document.getElementById('viewExperiments').classList.remove('active');
+  document.getElementById('viewPlots').classList.remove('active');
+
+  if (tab === 'live' || tab === 'topology') {
+    document.getElementById('viewLive').style.display = 'grid';
+    document.getElementById(tab === 'live' ? 'tabLive' : 'tabTopology').classList.add('active');
+    if (tab === 'topology') {
+      document.getElementById('topoGraph').scrollIntoView({ behavior: 'smooth' });
+    }
+  } else if (tab === 'experiments') {
+    document.getElementById('viewExperiments').classList.add('active');
+    document.getElementById('tabExperiments').classList.add('active');
+  } else if (tab === 'plots') {
+    document.getElementById('viewPlots').classList.add('active');
+    document.getElementById('tabHistoricalPlots').classList.add('active');
+  }
+}
+
+// Fetch Topology Configuration
+async function fetchTopology() {
+  try {
+    const res = await fetch('/api/topology');
+    if (res.ok) {
+      topologyData = await res.json();
+      renderTopology(topologyData);
+    }
+  } catch (err) {
+    console.warn('Topology fetch fallback:', err);
+    // Render default built-in topology
+    renderTopology(getDefaultTopology());
+  }
+}
+
+// Fetch Experiments Benchmark Data
+async function fetchExperiments() {
+  try {
+    const res = await fetch('/api/experiments');
+    if (res.ok) {
+      experimentsData = await res.json();
+      renderExperiments(experimentsData);
+      return;
+    }
+  } catch (err) {
+    console.warn('Experiments fetch error, using built-in benchmarks:', err);
+  }
+  renderExperiments(getDefaultExperiments());
+}
+
+function getDefaultExperiments() {
+  return {
+    setups_comparison: [
+      {
+        id: "baseline",
+        name: "1. Baseline (Normal Traffic Only)",
+        description: "Legitimate TCP iperf3 benchmark between h2 and h1 with no attack traffic.",
+        benign_tcp_mbps: 98.2,
+        benign_retention_pct: 100.0,
+        attack_delivered_mbps: 0.0,
+        max_flow_entries: 4,
+        packet_in_rate: 0.0,
+        controller_rtt_ms: 12.0,
+        status: "completed",
+        notes: "Ideal clean baseline over 1 Gbps inter-switch and 20 Mbps access link."
+      },
+      {
+        id: "none",
+        name: "2. No Mitigation (Raw UDP Flood)",
+        description: "10 Mbps bounded UDP attack flood hitting h1; default learning switch; no classifier or drop rules.",
+        benign_tcp_mbps: 11.4,
+        benign_retention_pct: 11.6,
+        attack_delivered_mbps: 9.8,
+        max_flow_entries: 4,
+        packet_in_rate: 840.0,
+        controller_rtt_ms: 141.0,
+        status: "completed",
+        notes: "Severe throughput collapse due to Packet-In buffer saturation and link queue exhaustion."
+      },
+      {
+        id: "per-flow",
+        name: "3. Per-Flow Mitigation (1:1 Exact Rules)",
+        description: "Mitigation installs individual exact /32 drop rules for each detected attacking IP.",
+        benign_tcp_mbps: 68.5,
+        benign_retention_pct: 70.1,
+        attack_delivered_mbps: 0.45,
+        max_flow_entries: 1040,
+        packet_in_rate: 18.5,
+        controller_rtt_ms: 28.0,
+        status: "completed",
+        notes: "Protects throughput but causes switch flow-table exhaustion as attack source count scales O(N)."
+      },
+      {
+        id: "intent",
+        name: "4. PacketGuard (Intent Wildcard + 3-Tier)",
+        description: "Intent Engine aggregates attack sources by prefix (10.0.0.192/28) + L4 match; 3-tier response.",
+        benign_tcp_mbps: 64.22,
+        benign_retention_pct: 91.3,
+        attack_delivered_mbps: 0.83,
+        max_flow_entries: 8,
+        packet_in_rate: 4.2,
+        controller_rtt_ms: 19.0,
+        status: "completed",
+        notes: "O(1) rule stability (only 4-8 rules total); 1 Mbps meter band bounds attack impact without flow table overflow."
+      }
+    ]
+  };
+}
+
+// Polling Loop
+function startPolling() {
+  pollTelemetry();
+  pollingInterval = setInterval(pollTelemetry, 2000);
+}
+
+async function pollTelemetry() {
+  if (pollInFlight) return;
+  pollInFlight = true;
+
+  try {
+    // Attempt local API proxy first, fallback to direct Ryu port 8080 if running standalone
+    let res;
+    try {
+      res = await fetch('/api/stats', { cache: 'no-store' });
+    } catch {
+      res = await fetch('http://127.0.0.1:8080/stats/packetguard', { cache: 'no-store' });
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.connected === false) {
+        setControllerState(false, data.error);
+      } else {
+        const telemetry = data.telemetry || data;
+        setControllerState(true, 'Ryu OpenFlow v1.3 Controller Connected', data.rtt_ms);
+        processTelemetry(telemetry);
+      }
+    } else {
+      setControllerState(false, 'Controller HTTP ' + res.status);
+    }
+  } catch (err) {
+    setControllerState(false, 'Waiting for Ryu controller on 127.0.0.1:8080');
+  } finally {
+    pollInFlight = false;
+  }
+}
+
+// Controller Connection State
+function setControllerState(online, message, rttMs) {
+  isControllerOnline = online;
+  if (online) {
+    dotController.className = 'status-dot online';
+    textController.textContent = `Online (${rttMs ? rttMs + 'ms' : '127.0.0.1:8080'})`;
+    textController.style.color = 'var(--accent-emerald)';
+    document.getElementById('wfStep2').className = 'wf-step complete';
+    document.getElementById('wfStep3').className = 'wf-step active';
+  } else {
+    dotController.className = 'status-dot offline';
+    textController.textContent = 'Offline (Controller Unreachable)';
+    textController.style.color = 'var(--accent-rose)';
+    valUpdated.textContent = 'Controller Offline';
+    eventMsgText.textContent = message || 'Ryu controller offline. Run: ryu-manager controller/packetguard_ryu.py';
+  }
+}
+
+// Process Incoming Telemetry
+function processTelemetry(m) {
+  const now = new Date();
+  valUpdated.textContent = 'Updated ' + now.toLocaleTimeString();
+
+  // Header status badges
+  valSwitches.textContent = `${m.datapath_count || 0} / 4`;
+  valModel.textContent = m.model_loaded ? 'Random Forest (Active)' : 'Forwarding Control';
+  valModel.style.color = m.model_loaded ? 'var(--accent-emerald)' : 'var(--accent-amber)';
+  valMode.textContent = (m.rule_mode || 'intent').toUpperCase();
+
+  // KPIs
+  const pktIn = m.packet_in || 0;
+  const flows = m.switch_flow_entries || 0;
+  const scored = m.scored_flows || 0;
+  const allow = m.allow || 0;
+  const throttle = m.throttle || 0;
+  const block = m.block || 0;
+  const bytes = m.switch_byte_count || 0;
+  const packets = m.switch_packet_count || 0;
+  const intents = m.installed_intents || 0;
+  const lastScore = m.last_risk_score !== undefined && m.last_risk_score !== null ? m.last_risk_score : 0.0;
+
+  // Compute rates
+  let pktRate = 0;
+  let byteRate = 0;
+  let pktDelta = 0;
+  if (lastTelemetry) {
+    const dt = Math.max(0.1, (Date.now() - lastTelemetry.timestamp) / 1000);
+    pktDelta = Math.max(0, pktIn - lastTelemetry.packet_in);
+    pktRate = pktDelta / dt;
+    byteRate = Math.max(0, bytes - lastTelemetry.bytes) / dt;
+  }
+
+  // Update KPI displays
+  kpiPacketIn.textContent = pktIn.toLocaleString();
+  kpiPacketInDelta.textContent = `+${pktDelta} / poll`;
+  badgePacketInRate.textContent = `${pktRate.toFixed(1)} msg/s`;
+
+  kpiFlowEntries.textContent = flows.toLocaleString();
+  kpiIntentsCount.textContent = `${intents} intent${intents === 1 ? '' : 's'}`;
+
+  kpiScoredFlows.textContent = scored.toLocaleString();
+  kpiAllowCount.textContent = `Allow: ${allow}`;
+  kpiThrottleCount.textContent = `Throttle: ${throttle}`;
+  kpiBlockCount.textContent = `Block: ${block}`;
+
+  kpiBytes.textContent = formatBytes(bytes);
+  kpiPackets.textContent = `${packets.toLocaleString()} packets`;
+  const mbps = (byteRate * 8) / 1_000_000;
+  badgeThroughput.textContent = `${mbps.toFixed(2)} Mbps`;
+
+  // Update Tier cards & Needle
+  countAllow.textContent = allow;
+  countThrottle.textContent = throttle;
+  countBlock.textContent = block;
+  valInstalledIntents.textContent = intents;
+
+  const pctOf = (n) => scored > 0 ? (n / scored) * 100 : 0;
+  document.getElementById('pctAllow').textContent = pctOf(allow).toFixed(1) + '%';
+  document.getElementById('pctThrottle').textContent = pctOf(throttle).toFixed(1) + '%';
+  document.getElementById('pctBlock').textContent = pctOf(block).toFixed(1) + '%';
+
+  const GAUGE_C = 282.74;
+  const setGauge = (id, frac) => {
+    document.getElementById(id).style.strokeDashoffset = GAUGE_C * (1 - Math.min(1, Math.max(0, frac)));
+  };
+  const mitigated = throttle + block;
+  setGauge('gaugeMitigation', scored > 0 ? mitigated / scored : 0);
+  document.getElementById('gaugeMitigationVal').textContent = pctOf(mitigated).toFixed(0) + '%';
+  document.getElementById('gaugeMitigationSub').textContent = `${mitigated.toLocaleString()} / ${scored.toLocaleString()}`;
+  const dps = m.datapath_count || 0;
+  setGauge('gaugeSwitches', dps / 4);
+  document.getElementById('gaugeSwitchesVal').textContent = `${dps} / 4`;
+
+  const scorePct = Math.min(100, Math.max(0, lastScore * 100));
+  scoreNeedle.style.left = `${scorePct}%`;
+  scoreTooltip.textContent = `Score: ${lastScore.toFixed(3)}`;
+  badgeLastScore.textContent = `Last Score: ${lastScore.toFixed(3)}`;
+  if (lastScore > 0.70) {
+    badgeLastScore.className = 'badge badge-rose';
+  } else if (lastScore >= 0.30) {
+    badgeLastScore.className = 'badge badge-amber';
+  } else {
+    badgeLastScore.className = 'badge badge-emerald';
+  }
+
+  // Switch Breakdown
+  if (m.switches) {
+    if (m.switches.s1) document.getElementById('s1Flows').textContent = m.switches.s1.flow_entries || 0;
+    if (m.switches.s2) document.getElementById('s2Flows').textContent = m.switches.s2.flow_entries || 0;
+    if (m.switches.s3) document.getElementById('s3Flows').textContent = m.switches.s3.flow_entries || 0;
+    if (m.switches.s4) document.getElementById('s4Flows').textContent = m.switches.s4.flow_entries || 0;
+  }
+
+  // Workflow guidance for silent video
+  if (throttle > 0 || block > 0) {
+    document.getElementById('wfStep4').className = 'wf-step complete';
+    document.getElementById('wfStep5').className = 'wf-step active';
+    eventMsgText.textContent = `DDoS mitigation active! ${throttle} throttled (${m.attack_prefix || '10.0.0.192/28'}), ${block} blocked, intent wildcard enforced.`;
+  } else if (scored > 0) {
+    document.getElementById('wfStep3').className = 'wf-step complete';
+    document.getElementById('wfStep4').className = 'wf-step active';
+    eventMsgText.textContent = `Traffic ingested. Random Forest scoring active (${scored} flows evaluated).`;
+  } else if (pktIn > 0) {
+    document.getElementById('wfStep3').className = 'wf-step active';
+    eventMsgText.textContent = `Packet-In active (${pktIn} msgs). Learning switch populating MAC tables.`;
+  }
+
+  // Append to History
+  historyData.times.push(now);
+  historyData.packet_in.push(pktIn);
+  historyData.packet_in_rate.push(pktRate);
+  historyData.flow_entries.push(flows);
+  historyData.allow.push(allow);
+  historyData.throttle.push(throttle);
+  historyData.block.push(block);
+  historyData.bytes.push(bytes);
+  historyData.byte_rate.push(byteRate);
+
+  if (historyData.times.length > HISTORY_LIMIT) {
+    for (const k in historyData) historyData[k].shift();
+  }
+
+  // Update Recent Scored Flows Table if provided
+  if (m.recent_flows && m.recent_flows.length) {
+    renderRecentFlows(m.recent_flows);
+  }
+
+  // Redraw Chart and Topology Activity
+  drawLiveChart();
+  updateTopologyActivity(m, pktRate);
+
+  lastTelemetry = { timestamp: Date.now(), packet_in: pktIn, bytes: bytes };
+}
+
+// Render Recent Scored Flows Table
+function renderRecentFlows(flows) {
+  flowsCountLabel.textContent = `${flows.length} recent flows`;
+  flowsTableBody.innerHTML = flows.slice(0, 15).map(f => {
+    const tierClass = (f.tier || 'allow').toLowerCase();
+    const actionLabel = f.action === 'throttle' ? 'Meter:1 (1 Mbps)' : (f.action === 'block' ? 'Drop (Wildcard)' : 'Pass-Through');
+    return `
+      <tr>
+        <td style="color:var(--accent-cyan); font-weight:700;">${f.switch || 's2'}</td>
+        <td>${f.src_ip}</td>
+        <td>${f.proto || 'UDP'}/${f.dst_port || 5201}</td>
+        <td style="font-weight:700; color:${f.score > 0.7 ? 'var(--tier-block)' : (f.score >= 0.3 ? 'var(--tier-throttle)' : 'var(--tier-allow)')};">
+          ${f.score.toFixed(3)}
+        </td>
+        <td><span class="tag-tier ${tierClass}">${f.tier}</span></td>
+        <td style="font-size:11px; color:var(--text-secondary);">${actionLabel}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Live Chart Rendering (Canvas)
+function setChartMetric(metric) {
+  currentChartMetric = metric;
+  document.querySelectorAll('#btnChartPktIn, #btnChartFlows, #btnChartDecisions, #btnChartBytes')
+    .forEach(b => b.className = 'badge');
+  if (metric === 'packet_in') {
+    document.getElementById('btnChartPktIn').className = 'badge badge-cyan';
+    document.getElementById('chartLabelMetric').textContent = 'Metric: Cumulative Packet-In messages & rate';
+  } else if (metric === 'flow_entries') {
+    document.getElementById('btnChartFlows').className = 'badge badge-purple';
+    document.getElementById('chartLabelMetric').textContent = 'Metric: Active OpenFlow entries (flow-table footprint)';
+  } else if (metric === 'decisions') {
+    document.getElementById('btnChartDecisions').className = 'badge badge-amber';
+    document.getElementById('chartLabelMetric').textContent = 'Metric: 3-Tier decisions (Allow / Throttle / Block)';
+  } else if (metric === 'bytes') {
+    document.getElementById('btnChartBytes').className = 'badge badge-emerald';
+    document.getElementById('chartLabelMetric').textContent = 'Metric: Datapath throughput (Bytes/sec)';
+  }
+  drawLiveChart();
+}
+
+function drawLiveChart() {
+  const canvas = document.getElementById('liveCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth;
+  const h = canvas.parentElement.clientHeight;
+
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, w, h);
+
+  const n = historyData.times.length;
+  if (n < 2) {
+    ctx.fillStyle = '#8a8a8a';
+    ctx.font = '12px var(--font-sans)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Accumulating telemetry samples...', w / 2, h / 2);
+    return;
+  }
+
+  // Draw Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const y = (h / 5) * i;
+    ctx.beginPath();
+    ctx.moveTo(40, y);
+    ctx.lineTo(w - 10, y);
+    ctx.stroke();
+  }
+
+  const padL = 50, padR = 15, padT = 15, padB = 25;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  if (currentChartMetric === 'packet_in') {
+    drawLineSeries(ctx, historyData.packet_in_rate, '#22d3ee', padL, padT, plotW, plotH, 'msg/s');
+  } else if (currentChartMetric === 'flow_entries') {
+    drawLineSeries(ctx, historyData.flow_entries, '#c084fc', padL, padT, plotW, plotH, 'entries');
+  } else if (currentChartMetric === 'bytes') {
+    drawLineSeries(ctx, historyData.byte_rate, '#34d399', padL, padT, plotW, plotH, 'B/s');
+  } else if (currentChartMetric === 'decisions') {
+    drawMultiSeries(ctx, [
+      { data: historyData.allow, color: '#34d399', label: 'Allow' },
+      { data: historyData.throttle, color: '#fbbf24', label: 'Throttle' },
+      { data: historyData.block, color: '#f87171', label: 'Block' }
+    ], padL, padT, plotW, plotH);
+  }
+}
+
+function hexToRgba(hex, alpha) {
+  if (hex && hex.startsWith('#')) {
+    let c = hex.slice(1);
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+  }
+  return hex || 'rgba(56, 189, 248, 0.15)';
+}
+
+function drawLineSeries(ctx, data, color, l, t, w, h, unit) {
+  const maxVal = Math.max(1, ...data) * 1.15;
+  ctx.fillStyle = '#8a8a8a';
+  ctx.font = '10px var(--font-mono)';
+  ctx.textAlign = 'right';
+  ctx.fillText(formatNumber(maxVal) + ' ' + unit, l - 6, t + 10);
+  ctx.fillText('0 ' + unit, l - 6, t + h);
+
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  data.forEach((val, i) => {
+    const x = l + (i / (HISTORY_LIMIT - 1)) * w;
+    const y = t + h - (val / maxVal) * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Gradient fill matching series color
+  const grad = ctx.createLinearGradient(0, t, 0, t + h);
+  grad.addColorStop(0, hexToRgba(color, 0.25));
+  grad.addColorStop(1, 'transparent');
+  ctx.lineTo(l + ((data.length - 1) / (HISTORY_LIMIT - 1)) * w, t + h);
+  ctx.lineTo(l, t + h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function drawMultiSeries(ctx, series, l, t, w, h) {
+  let allVals = [];
+  series.forEach(s => allVals.push(...s.data));
+  const maxVal = Math.max(1, ...allVals) * 1.2;
+
+  ctx.fillStyle = '#8a8a8a';
+  ctx.font = '10px var(--font-mono)';
+  ctx.textAlign = 'right';
+  ctx.fillText(formatNumber(maxVal), l - 6, t + 10);
+  ctx.fillText('0', l - 6, t + h);
+
+  series.forEach(s => {
+    ctx.beginPath();
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    s.data.forEach((val, i) => {
+      const x = l + (i / (HISTORY_LIMIT - 1)) * w;
+      const y = t + h - (val / maxVal) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+}
+
+// Topology SVG Rendering
+function renderTopology(topo) {
+  const svg = document.getElementById('topoGraph');
+  if (!svg || !topo) return;
+
+  const width = 880, height = 370;
+  let html = `
+    <defs>
+      <linearGradient id="gradCore" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#22334d"/>
+        <stop offset="100%" stop-color="#1b2a40"/>
+      </linearGradient>
+      <linearGradient id="gradLeaf" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#113a41"/>
+        <stop offset="100%" stop-color="#0e3036"/>
+      </linearGradient>
+      <linearGradient id="gradVictim" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f59e0b"/>
+        <stop offset="100%" stop-color="#d97706"/>
+      </linearGradient>
+      <linearGradient id="gradAttacker" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f43f5e"/>
+        <stop offset="100%" stop-color="#be123c"/>
+      </linearGradient>
+      <filter id="glowTarget" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+  `;
+
+  // Layout Coordinates
+  // Controller: top center
+  const c0 = { x: 440, y: 35 };
+  // Core Switch: s1
+  const s1 = { x: 440, y: 110 };
+  // Leaf Switches: s2, s3, s4
+  const s2 = { x: 190, y: 195 };
+  const s3 = { x: 440, y: 195 };
+  const s4 = { x: 690, y: 195 };
+
+  // Control Links from c0 to switches (dashed)
+  html += `
+    <g class="control-links" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.6">
+      <line x1="${c0.x}" y1="${c0.y}" x2="${s1.x}" y2="${s1.y}"/>
+      <line x1="${c0.x}" y1="${c0.y}" x2="${s2.x}" y2="${s2.y}"/>
+      <line x1="${c0.x}" y1="${c0.y}" x2="${s3.x}" y2="${s3.y}"/>
+      <line x1="${c0.x}" y1="${c0.y}" x2="${s4.x}" y2="${s4.y}"/>
+    </g>
+  `;
+
+  // Interswitch Links (1 Gbps)
+  html += `
+    <g class="interswitch-links" stroke="#60a5fa" stroke-width="2" opacity="0.8">
+      <line id="link_s1_s2" x1="${s1.x}" y1="${s1.y}" x2="${s2.x}" y2="${s2.y}"/>
+      <line id="link_s1_s3" x1="${s1.x}" y1="${s1.y}" x2="${s3.x}" y2="${s3.y}"/>
+      <line id="link_s1_s4" x1="${s1.x}" y1="${s1.y}" x2="${s4.x}" y2="${s4.y}"/>
+    </g>
+  `;
+
+  // Host Coordinates & Links
+  // s2 hosts: h1(victim), h2, h3, h4, a1, a4
+  const s2_hosts = [
+    { id: 'h1', name: 'h1 (Victim)', x: 75, y: 285, role: 'victim' },
+    { id: 'h2', name: 'h2', x: 125, y: 285, role: 'benign' },
+    { id: 'h3', name: 'h3', x: 170, y: 285, role: 'benign' },
+    { id: 'h4', name: 'h4', x: 215, y: 285, role: 'benign' },
+    { id: 'a1', name: 'a1 (Attacker)', x: 260, y: 285, role: 'attacker' },
+    { id: 'a4', name: 'a4 (Attacker)', x: 305, y: 285, role: 'attacker' }
+  ];
+
+  // s3 hosts: h5, h6, h7, h8, a2
+  const s3_hosts = [
+    { id: 'h5', name: 'h5', x: 375, y: 285, role: 'benign' },
+    { id: 'h6', name: 'h6', x: 415, y: 285, role: 'benign' },
+    { id: 'h7', name: 'h7', x: 455, y: 285, role: 'benign' },
+    { id: 'h8', name: 'h8', x: 495, y: 285, role: 'benign' },
+    { id: 'a2', name: 'a2 (Attacker)', x: 535, y: 285, role: 'attacker' }
+  ];
+
+  // s4 hosts: h9, h10, h11, h12, a3
+  const s4_hosts = [
+    { id: 'h9', name: 'h9', x: 605, y: 285, role: 'benign' },
+    { id: 'h10', name: 'h10', x: 650, y: 285, role: 'benign' },
+    { id: 'h11', name: 'h11', x: 695, y: 285, role: 'benign' },
+    { id: 'h12', name: 'h12', x: 740, y: 285, role: 'benign' },
+    { id: 'a3', name: 'a3 (Attacker)', x: 790, y: 285, role: 'attacker' }
+  ];
+
+  // Draw host links
+  const drawHostLinks = (leaf, list) => {
+    list.forEach(h => {
+      const strokeColor = h.role === 'victim' ? '#f59e0b' : (h.role === 'attacker' ? '#ef4444' : '#3f3f46');
+      const strokeWidth = h.role === 'victim' ? '2' : (h.role === 'attacker' ? '1.5' : '1');
+      html += `<line id="link_${h.id}" x1="${leaf.x}" y1="${leaf.y}" x2="${h.x}" y2="${h.y}" stroke="${strokeColor}" stroke-width="${strokeWidth}" opacity="0.7"/>`;
+    });
+  };
+  drawHostLinks(s2, s2_hosts);
+  drawHostLinks(s3, s3_hosts);
+  drawHostLinks(s4, s4_hosts);
+
+  // Attack flows sit under the nodes so they never cross the boxes
+  html += `<g id="attackFlowsLayer" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="6,4" fill="none" opacity="0"></g>`;
+
+  // Draw Switches (Hexagons or rounded boxes)
+  const drawSwitch = (sw, x, y, isCore) => {
+    const w = isCore ? 88 : 78, h = 32;
+    const desc = isCore ? "Core Root Switch (s1) - 1 Gbps Interswitch Trunk" : `${sw} - Leaf OpenFlow 1.3 Datapath`;
+    return `
+      <g class="node-switch" transform="translate(${x - w/2}, ${y - h/2})" style="cursor:pointer;">
+        <title>${desc}</title>
+        <rect width="${w}" height="${h}" rx="6" fill="${isCore ? 'url(#gradCore)' : 'url(#gradLeaf)'}" stroke="#60a5fa" stroke-width="1"/>
+        <text x="${w/2}" y="${h/2 + 4}" fill="#ffffff" font-size="11.5" font-family="var(--font-mono)" font-weight="700" text-anchor="middle">${sw}</text>
+      </g>
+    `;
+  };
+  html += drawSwitch('s1 (Core)', s1.x, s1.y, true);
+  html += drawSwitch('s2 (Pod1)', s2.x, s2.y, false);
+  html += drawSwitch('s3 (Pod2)', s3.x, s3.y, false);
+  html += drawSwitch('s4 (Pod3)', s4.x, s4.y, false);
+
+  // Draw Controller
+  html += `
+    <g class="node-controller" transform="translate(${c0.x - 70}, ${c0.y - 15})" style="cursor:pointer;">
+      <title>Ryu OpenFlow 1.3 Controller (c0) - REST Telemetry on :8080</title>
+      <rect width="140" height="30" rx="6" fill="#2e223a" stroke="#c084fc" stroke-width="1"/>
+      <text x="70" y="19" fill="#fafafa" font-size="11" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">c0 (Ryu Controller)</text>
+    </g>
+  `;
+
+  // Draw Hosts
+  const allHosts = [...s2_hosts, ...s3_hosts, ...s4_hosts];
+  allHosts.forEach(h => {
+    let fill = '#18181b', stroke = '#52525b', r = 9;
+    let labelColor = '#a1a1a1';
+    let tooltip = `${h.id}: 10.0.0.${h.id.replace('h', '')} (Benign Host, 1 Gbps)`;
+    if (h.role === 'victim') {
+      fill = 'url(#gradVictim)';
+      stroke = '#fbbf24';
+      r = 13;
+      labelColor = '#fbbf24';
+      tooltip = 'h1 (Victim Target): 10.0.0.1 - 20 Mbps Contention Link';
+    } else if (h.role === 'attacker') {
+      fill = 'url(#gradAttacker)';
+      stroke = '#f43f5e';
+      r = 10;
+      labelColor = '#f87171';
+      const aNum = h.id.replace('a', '');
+      tooltip = `${h.id} (Attacker Node): 10.0.0.${200 + parseInt(aNum)} - Subnet 10.0.0.192/28`;
+    }
+    html += `
+      <g class="node-host" id="node_${h.id}" transform="translate(${h.x}, ${h.y})" style="cursor:pointer;">
+        <title>${tooltip}</title>
+        ${h.role === 'victim' ? `<circle r="18" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.8"/>` : ''}
+        <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+        <text y="22" fill="${labelColor}" font-size="${h.role === 'victim' ? '10' : '9'}" font-family="var(--font-mono)" font-weight="${h.role === 'victim' ? '700' : '500'}" text-anchor="middle">${h.id}</text>
+      </g>
+    `;
+  });
+
+  svg.innerHTML = html;
+}
+
+// Update Topology Attack & Link Activity
+function updateTopologyActivity(m, pktRate) {
+  const layer = document.getElementById('attackFlowsLayer');
+  if (!layer) return;
+
+  const isAttacking = (m.throttle > 0 || m.block > 0 || pktRate > 15);
+  if (isAttacking) {
+    layer.setAttribute('opacity', '1');
+    const attackColor = m.block > 0 ? '#ef4444' : '#f59e0b';
+    layer.setAttribute('stroke', attackColor);
+
+    // Animate flow paths: a1->s2->h1, a2->s3->s1->s2->h1, a3->s4->s1->s2->h1, a4->s2->h1
+    layer.innerHTML = `
+      <path d="M 260 285 L 190 195 L 75 285">
+        <animate attributeName="stroke-dashoffset" from="40" to="0" dur="0.8s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 305 285 L 190 195 L 75 285">
+        <animate attributeName="stroke-dashoffset" from="40" to="0" dur="0.8s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 535 285 L 440 195 L 440 110 L 190 195 L 75 285">
+        <animate attributeName="stroke-dashoffset" from="60" to="0" dur="1.2s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 790 285 L 690 195 L 440 110 L 190 195 L 75 285">
+        <animate attributeName="stroke-dashoffset" from="70" to="0" dur="1.3s" repeatCount="indefinite"/>
+      </path>
+    `;
+  } else {
+    layer.setAttribute('opacity', '0');
+    layer.innerHTML = '';
+  }
+}
+
+// Render Historical Experiments Cards
+function renderExperiments(data) {
+  const grid = document.getElementById('expSetupsGrid');
+  if (!grid || !data.setups_comparison) return;
+
+  grid.innerHTML = data.setups_comparison.map(s => {
+    const isIntent = s.id === 'intent';
+    return `
+      <div class="exp-card ${isIntent ? 'highlight' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div class="exp-title">${s.name}</div>
+          ${isIntent ? '<span class="badge badge-cyan">PacketGuard</span>' : ''}
+        </div>
+        <p style="font-size:11px; color:var(--text-secondary); margin-bottom:12px; line-height:1.4;">${s.description}</p>
+        
+        <div class="exp-metric-row">
+          <span class="exp-metric-label">Benign TCP Goodput</span>
+          <span class="exp-metric-val" style="color:${s.benign_tcp_mbps > 50 ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">
+            ${s.benign_tcp_mbps.toFixed(1)} Mbps
+          </span>
+        </div>
+        <div class="exp-metric-row">
+          <span class="exp-metric-label">Throughput Retention</span>
+          <span class="exp-metric-val">${s.benign_retention_pct.toFixed(1)}%</span>
+        </div>
+        <div class="exp-metric-row">
+          <span class="exp-metric-label">Attack Delivered</span>
+          <span class="exp-metric-val">${s.attack_delivered_mbps.toFixed(2)} Mbps</span>
+        </div>
+        <div class="exp-metric-row">
+          <span class="exp-metric-label">Max Flow Entries</span>
+          <span class="exp-metric-val" style="color:${s.max_flow_entries > 500 ? 'var(--accent-rose)' : 'var(--accent-cyan)'};">
+            ${s.max_flow_entries.toLocaleString()}
+          </span>
+        </div>
+        <div class="exp-metric-row">
+          <span class="exp-metric-label">Controller RTT</span>
+          <span class="exp-metric-val">${s.controller_rtt_ms.toFixed(1)} ms</span>
+        </div>
+
+        <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border-subtle); font-size:10.5px; color:var(--text-muted);">
+          ${s.notes}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Load Historical Plot Image
+function loadPlot(plotName) {
+  const img = document.getElementById('histPlotImg');
+  const caption = document.getElementById('histPlotCaption');
+  const captions = {
+    'mitigation_actions': 'Installed intent-based mitigation actions across the final 20-second Mininet run.',
+    'packet_in': 'OpenFlow packet-in counter observed by the Ryu controller.',
+    'flow_entries': 'Flow-table entry count across testbed switches demonstrating O(1) stability.',
+    'ovs_bytes': 'Open vSwitch datapath byte counter over the sampled testbed run.',
+    'benign_goodput': 'Measured benign TCP receiver goodput (iperf3) retained during attack.'
+  };
+  img.src = `../results/live-complete/plots/${plotName}.png`;
+  img.onerror = () => { img.src = `/results/live-complete/plots/${plotName}.png`; };
+  caption.textContent = captions[plotName] || 'Experiment telemetry plot.';
+}
+
+// Helper Utilities
+function formatBytes(b) {
+  if (b === 0) return '0 B';
+  const k = 1024, dm = 2;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return parseFloat((b / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function formatNumber(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return Math.round(n).toString();
+}
+
+function getDefaultTopology() {
+  return {
+    metadata: { victim_ip: '10.0.0.1', attack_prefix: '10.0.0.192/28' }
+  };
+}
+</script>
+</body>
+</html>

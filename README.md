@@ -65,11 +65,21 @@ Use the Mininet VM or a dedicated Ubuntu 20.04 / Python 3.8 environment where Mi
 
    Run metadata records the selected mode.
 
-4. In a second terminal, start the live Matplotlib dashboard:
+4. In a second terminal, start the interactive web dashboard server (recommended for visual demonstration):
 
    ```bash
-   python experiments/live_dashboard.py
+   python experiments/dashboard_server.py --port 8000
    ```
+
+   Open your browser to **`http://localhost:8000`**. The dashboard connects directly to the Ryu controller, automatically tracks connection state, and displays:
+   - Live system overview, controller connectivity, and polling indicators.
+   - Interactive 16-host / 4-switch Mininet topology with real-time attack flow vector animations.
+   - Real-time rolling telemetry charts (Packet-In rate, OVS flow entries, mitigation decisions, throughput).
+   - 3-tier ML policy meter (Allow / Throttle / Block) with active risk score gauge and live flow scoring log.
+   - Intent-based wildcard aggregation metrics ($O(1)$ rule stability).
+   - Verified benchmark experiment results comparing all 4 setups (Baseline, None, Per-flow, Intent).
+
+   *(Alternatively, run the legacy CLI Matplotlib dashboard with `python experiments/live_dashboard.py`)*
 
 5. In a third terminal, run the bounded 4-switch / 16-host lab experiment:
 
@@ -142,6 +152,56 @@ The simulator's rule counts, rates, and classifier scores describe only this sof
 2. Confirm the CICFlowMeter CSV columns and label balance in the downloaded release.
 3. Compare live controller feature distributions with training data before interpreting model predictions.
 4. Repeat controlled runs and report measured switch/controller counters separately from simulation output.
+
+## Silent Demonstration Video Guide
+
+Use this step-by-step procedure to record a clean, silent project demonstration video showing PacketGuard operating live:
+
+### 1. Pre-flight Setup
+Open two side-by-side windows:
+- **Left Window (50% screen):** Web Browser at `http://localhost:8000` (1080p full view).
+- **Right Window (50% screen):** WSL Ubuntu terminal tabs for running controller and experiments.
+
+### 2. Launch Sequence
+
+**Terminal 1 — Ryu Controller:**
+```bash
+cd ~/packetguard
+. .venv/bin/activate
+ryu-manager --ofp-tcp-listen-port 6653 controller/packetguard_ryu.py
+```
+*Visual Confirmation:* The dashboard top bar immediately turns from red (Offline) to **glowing green ("Online: 127.0.0.1:8080")** and confirms `Classifier: Random Forest (Active)`.
+
+**Terminal 2 — Dashboard Server:**
+```bash
+cd ~/packetguard
+python experiments/dashboard_server.py --port 8000
+```
+*(If running the browser on Windows, you can alternatively launch the dashboard server directly in PowerShell: `python experiments/dashboard_server.py --port 8000`)*
+
+**Terminal 3 — Live Experiment Execution:**
+```bash
+cd ~/packetguard
+sudo .venv/bin/python experiments/run_lab.py --duration 20 --udp-rate 1M
+```
+
+### 3. What the Silent Video Captures in Real-Time:
+1. **Network Initialization (t = 0-2s):**
+   - Datapath count jumps to `4 / 4` switches (`s1, s2, s3, s4`).
+   - The interactive topology displays all 16 hosts with victim `h1` highlighted in amber.
+2. **Traffic Ingestion & Packet-In Spike (t = 2-6s):**
+   - Cumulative Packet-In counter rapidly increases on the KPI card.
+   - Live time-series canvas begins plotting the incoming packet rate.
+   - Event banner updates: *"Traffic Ingestion · Feature extraction every 2s"*.
+3. **Random Forest Scoring & 3-Tier Mitigation (t = 6-12s):**
+   - The graduated policy needle swings into the amber **THROTTLE (0.30 - 0.70)** zone (`last_score ~ 0.59`).
+   - Scored flow table populates with incoming UDP 5201 flows from `10.0.0.201-204`.
+   - The intent wildcard rule `priority=450,udp,nw_src=10.0.0.192/28,tp_dst=5201 actions=meter:1` installs on OVS switches.
+   - In the topology diagram, animated attack streams flow from `a1-a4` through leaf switches toward victim `h1` with visual meter bounding.
+4. **Flow Table Stability (t = 12-20s):**
+   - The flow entries chart stays constant at $O(1)$ ($~8-12$ rules), demonstrating zero TCAM overflow.
+5. **Benchmark Verification:**
+   - Click the **"Verified Benchmark Experiments"** tab to highlight the 4-setup comparison grid (Baseline vs None vs Per-Flow vs PacketGuard Intent) and CIC-DDoS2019 offline model accuracy (99.25% accuracy, 0.9757 F1).
 
 ## Safety
 

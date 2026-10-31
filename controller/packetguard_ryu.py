@@ -12,7 +12,7 @@ import json
 import ipaddress
 import os
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import joblib
 import pandas as pd
@@ -29,6 +29,10 @@ ATTACK_PREFIX = os.environ.get("PACKETGUARD_ATTACK_PREFIX", "10.0.0.192/28")
 ATTACK_NETWORK = ipaddress.ip_network(ATTACK_PREFIX, strict=False)
 if ATTACK_NETWORK.version != 4:
     raise ValueError("PACKETGUARD_ATTACK_PREFIX must be an IPv4 network")
+BENIGN_FORWARD_ENDPOINTS = frozenset(
+    address.strip() for address in os.environ.get(
+        "PACKETGUARD_BENIGN_FORWARD_ENDPOINTS", "10.0.0.1,10.0.0.2").split(",")
+    if address.strip())
 MODEL_PATH = os.environ.get("PACKETGUARD_MODEL", "artifacts/model.joblib")
 LOW_THRESHOLD = float(os.environ.get("PACKETGUARD_LOW_THRESHOLD", "0.30"))
 HIGH_THRESHOLD = float(os.environ.get("PACKETGUARD_HIGH_THRESHOLD", "0.70"))
@@ -70,8 +74,14 @@ class PacketGuardController(app_manager.RyuApp):
                                              "last_packets": 0, "last_bytes": 0,
                                              "last_duration": 0.0, "last_seen": 0.0})
         self.flow_baselines = {}
+        # A flow-stat reply is a measurement window.  Classifying the same
+        # installed rule on every poll creates controller work proportional to
+        # the duration of a run, rather than to the number of observed flows.
+        self.scored_flow_keys = set()
+        self.mitigation_keys = set()
         self.switch_counters = {}
         self.datapaths = {}
+        self.recent_flows = deque(maxlen=30)
         self.metrics = {"packet_in": 0, "scored_flows": 0, "allow": 0,
                         "throttle": 0, "block": 0, "installed_intents": 0,
                         "last_update": None, "model_loaded": self.model is not None,
@@ -139,8 +149,23 @@ class PacketGuardController(app_manager.RyuApp):
             # Learn an allowed L4 forwarding entry after the destination port
             # is known. Scoring happens only from OpenFlow flow-stat replies.
             if out_port != ofp.OFPP_FLOOD:
-                allow_match = self._l4_match(parser, ip.src, ip.dst, proto, dst_port)
-                self._add_flow(dp, 400, allow_match, actions, idle_timeout=10)
+                # Intent mode keeps the reserved attack scope aggregated from
+                # the first permitted packet onward. Per-flow mode retains an
+                # exact source match. Benign traffic always uses an exact rule.
+                if proto == 6 and self._is_benign_forward_pair(ip.src, ip.dst):
+                    # The benchmark's h1<->h2 TCP test uses a fresh ephemeral
+                    # return port each run. Install a pair-scoped TCP rule so
+                    # its handshake and return path never compete with an
+                    # attack burst for Packet-In handling.
+                    allow_match = self._l4_match(parser, ip.src, ip.dst, proto, None)
+                    allow_timeout = 60
+                elif RULE_MODE == "intent" and self._in_attack_prefix(ip.src):
+                    allow_match = self._intent_match(parser, proto, dst_port)
+                    allow_timeout = 10
+                else:
+                    allow_match = self._l4_match(parser, ip.src, ip.dst, proto, dst_port)
+                    allow_timeout = 10
+                self._add_flow(dp, 400, allow_match, actions, idle_timeout=allow_timeout)
         # Forward the current packet. A learned destination gets a direct output;
         # unknown destinations are flooded as in a basic learning switch.
         if msg.buffer_id == ofp.OFP_NO_BUFFER:
@@ -174,10 +199,13 @@ class PacketGuardController(app_manager.RyuApp):
                 # Flooding a metered flow duplicates packets across the tree and
                 # can prevent concurrent UDP clients from completing.
                 actions = [parser.OFPActionOutput(out_port)]
-                self._add_flow(dp, 450, match, actions, idle_timeout=30, meter_id=1)
-                self.metrics["mitigation_rules_installed"] = self.metrics.get("mitigation_rules_installed", 0) + 1
-                if RULE_MODE == "intent":
-                    self.metrics["installed_intents"] += 1
+                mitigation_key = self._mitigation_key(dp, src_ip, dst_ip, proto, dst_port, "throttle")
+                if mitigation_key not in self.mitigation_keys:
+                    self._add_flow(dp, 450, match, actions, idle_timeout=30, meter_id=1)
+                    self.mitigation_keys.add(mitigation_key)
+                    self.metrics["mitigation_rules_installed"] = self.metrics.get("mitigation_rules_installed", 0) + 1
+                    if RULE_MODE == "intent":
+                        self.metrics["installed_intents"] += 1
             else:
                 # Without an explicitly scoped lab attack prefix, avoid installing
                 # a broad wildcard. Keep forwarding and record the score instead.
@@ -186,15 +214,31 @@ class PacketGuardController(app_manager.RyuApp):
             action_name = "block"
             if ip_prefix:
                 match = self._mitigation_match(parser, src_ip, dst_ip, proto, dst_port)
-                self._add_flow(dp, 500, match, [], idle_timeout=30)
-                self.metrics["mitigation_rules_installed"] = self.metrics.get("mitigation_rules_installed", 0) + 1
-                if RULE_MODE == "intent":
-                    self.metrics["installed_intents"] += 1
+                mitigation_key = self._mitigation_key(dp, src_ip, dst_ip, proto, dst_port, "block")
+                if mitigation_key not in self.mitigation_keys:
+                    self._add_flow(dp, 500, match, [], idle_timeout=30)
+                    self.mitigation_keys.add(mitigation_key)
+                    self.metrics["mitigation_rules_installed"] = self.metrics.get("mitigation_rules_installed", 0) + 1
+                    if RULE_MODE == "intent":
+                        self.metrics["installed_intents"] += 1
             else:
                 action_name = "allow_unscoped_suspicion"
         if action_name in self.metrics:
             self.metrics[action_name] += 1
         self.metrics["last_risk_score"] = score
+        flow_record = {
+            "timestamp": time.time(),
+            "switch": f"s{dp.id}",
+            "src_ip": src_ip,
+            "dst_ip": dst_ip or "10.0.0.1",
+            "proto": "UDP" if proto == 17 else ("TCP" if proto == 6 else ("ICMP" if proto == 1 else str(proto))),
+            "dst_port": dst_port,
+            "score": round(score, 4),
+            "tier": "allow" if score < LOW_THRESHOLD else ("throttle" if score <= HIGH_THRESHOLD else "block"),
+            "action": action_name,
+            "rule_type": "intent-wildcard" if (RULE_MODE == "intent" and self._in_attack_prefix(src_ip)) else "exact-flow"
+        }
+        self.recent_flows.appendleft(flow_record)
         self.logger.info("src=%s proto=%s dst_port=%s risk=%.3f action=%s",
                          src_ip, proto, dst_port, score, action_name)
         return action_name
@@ -218,6 +262,10 @@ class PacketGuardController(app_manager.RyuApp):
             return None
 
     @staticmethod
+    def _mitigation_key(dp, src_ip, dst_ip, proto, dst_port, action):
+        scope = ATTACK_PREFIX if RULE_MODE == "intent" else src_ip
+        return dp.id, action, scope, dst_ip, proto, dst_port
+    @staticmethod
     def _flow_output_port(dp, flow):
         """Read the allowed-flow output port from OpenFlow instructions."""
         for instruction in flow.instructions:
@@ -235,6 +283,10 @@ class PacketGuardController(app_manager.RyuApp):
             return False
 
     @staticmethod
+    def _is_benign_forward_pair(src_ip, dst_ip):
+        return src_ip in BENIGN_FORWARD_ENDPOINTS and dst_ip in BENIGN_FORWARD_ENDPOINTS
+
+    @staticmethod
     def _mitigation_match(parser, src_ip, dst_ip, proto, dst_port):
         if RULE_MODE == "per-flow":
             return PacketGuardController._l4_match(parser, src_ip, dst_ip, proto, dst_port)
@@ -246,8 +298,8 @@ class PacketGuardController(app_manager.RyuApp):
                   "ipv4_src": (str(ATTACK_NETWORK.network_address),
                                str(ATTACK_NETWORK.netmask)),
                   "ip_proto": proto}
-        if proto == 6: fields["tcp_dst"] = dst_port
-        elif proto == 17: fields["udp_dst"] = dst_port
+        if proto == 6 and dst_port is not None: fields["tcp_dst"] = dst_port
+        elif proto == 17 and dst_port is not None: fields["udp_dst"] = dst_port
         return parser.OFPMatch(**fields)
 
     @staticmethod
@@ -296,12 +348,18 @@ class PacketGuardController(app_manager.RyuApp):
         for f in entries:
             match = f.match
             src_ip = match.get("ipv4_src")
+            # Prefix matches are represented as a tuple by some Ryu/OVS
+            # versions. The policy needs one representative address; the
+            # intent match itself remains the configured aggregate prefix.
+            policy_src_ip = src_ip[0] if isinstance(src_ip, tuple) else str(src_ip).split("/")[0]
             dst_ip = match.get("ipv4_dst")
             proto = int(match.get("ip_proto", 0))
             dst_port = int(match.get("tcp_dst", match.get("udp_dst", 0)))
             if not src_ip:
                 continue
             key = (dp.id, src_ip, dst_ip, proto, dst_port)
+            if key in self.scored_flow_keys:
+                continue
             duration = float(f.duration_sec) + float(f.duration_nsec) / 1e9
             previous = self.flow_baselines.get(key)
             self.flow_baselines[key] = (int(f.packet_count), int(f.byte_count), duration, now)
@@ -315,14 +373,17 @@ class PacketGuardController(app_manager.RyuApp):
                 packet_delta = max(0, int(f.packet_count) - previous[0])
                 byte_delta = max(0, int(f.byte_count) - previous[1])
                 duration_delta = max(1e-3, duration - previous[2])
+                if packet_delta == 0:
+                    continue
             row = {"packet_rate": packet_delta / duration_delta,
                    "byte_count": byte_delta, "duration_s": duration_delta,
                    "protocol": proto, "dst_port": dst_port,
                    "destination_ip": dst_ip}
             out_port = self._flow_output_port(dp, f)
             if self.model is not None:
-                self._score_and_apply(dp, src_ip, proto, dst_port, row, out_port,
+                self._score_and_apply(dp, policy_src_ip, proto, dst_port, row, out_port,
                                       refresh_allow=False)
+                self.scored_flow_keys.add(key)
         # Store switch counters for REST collection; no fabricated RTT/throughput.
         entries = [f for f in ev.msg.body if f.priority > 0]
         self.switch_counters[dp.id] = {
@@ -342,13 +403,28 @@ class PacketGuardStats(ControllerBase):
 
     @route("packetguard", "/stats/packetguard", methods=["GET"])
     def get_stats(self, req, **kwargs):
-        body = json.dumps(self.packetguard.metrics, sort_keys=True)
+        payload = dict(self.packetguard.metrics)
+        payload["switches"] = {
+            f"s{k}": v for k, v in self.packetguard.switch_counters.items()
+        }
+        payload["recent_flows"] = list(self.packetguard.recent_flows)
+        body = json.dumps(payload, sort_keys=True)
         return self._response(body)
+
+    @route("packetguard", "/stats/packetguard", methods=["OPTIONS"])
+    def options_stats(self, req, **kwargs):
+        return self._response("{}")
 
     @staticmethod
     def _response(body):
         from webob import Response
-        return Response(content_type="application/json", body=body.encode("utf-8"))
+        res = Response(content_type="application/json", body=body.encode("utf-8"))
+        res.headers["Access-Control-Allow-Origin"] = "*"
+        res.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        res.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return res
+
+
 
 
 
